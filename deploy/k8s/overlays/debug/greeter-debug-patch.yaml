@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: greeter
+spec:
+  template:
+    spec:
+      containers:
+        - name: greeter
+          ports:
+            - containerPort: 8000
+            - containerPort: 9000
+            - containerPort: 2345
+              name: dlv
+          # Disable probes — hitting a breakpoint pauses the process and
+          # will trigger pod restarts if probes are active
+          readinessProbe: null
+          livenessProbe: null
+          securityContext:
+            capabilities:
+              add: ["SYS_PTRACE"]

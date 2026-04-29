@@ -1,0 +1,34 @@
+.planning/
+.claude/
+.agents/
+.git/
+.vscode/
+design/
+**/node_modules/
+**/.next/
+**/bin/
+**/ent/migrate/
+**/*_test.go
+**/testdata/
+skills-lock.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea/
+*.swp
+*.swx
+
+# Secrets
+*.cert
+*.key
+
+# Vendor (if ever added)
+vendor/
+
+# Helm chart tarballs (fetched by helm dependency update)
+deploy/helm/charts/
+deploy/helm/tmpcharts*/
+deploy/helm/Chart.lock

@@ -1,0 +1,20 @@
+FROM golang:1.26 AS tools
+
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    go install github.com/go-delve/delve/cmd/dlv@latest
+
+FROM debian:stable-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ca-certificates netbase \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get autoremove -y && apt-get autoclean -y
+
+COPY --from=tools /go/bin/dlv  /usr/local/bin/dlv
+COPY dist/greeter            /app/greeter
+
+WORKDIR /app
+
+EXPOSE 8000 9000 2345
+VOLUME /data/conf

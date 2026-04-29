@@ -1,0 +1,41 @@
+# Git
+.git/
+.gitignore
+
+# Local build outputs (bin/ is the production output; dist/ is dev-only and needed by Dockerfile.dev)
+bin/
+
+# Tilt / Claude tooling
+.tiltignore
+Tiltfile
+.claude/
+
+# Dev Dockerfiles (not needed inside build context)
+app/greeter/Dockerfile.dev
+app/greeter/Dockerfile.dev.debug
+
+# K8s / deploy configs
+deploy/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swx
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Go test / coverage artifacts
+**/*_test.go
+**/testdata/
+*.test
+*.out
+
+# Secrets
+*.cert
+*.key
+
+# Vendor (if ever added)
+vendor/

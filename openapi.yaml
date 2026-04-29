@@ -1,0 +1,85 @@
+# Generated with protoc-gen-openapi
+# https://github.com/google/gnostic/tree/master/cmd/protoc-gen-openapi
+
+openapi: 3.0.3
+info:
+    title: Greeter API
+    version: 0.0.1
+paths:
+    /greeter/create/{hello}:
+        get:
+            tags:
+                - Greeter
+            operationId: Greeter_CreateGreeter
+            parameters:
+                - name: hello
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/helloworld.v1.CreateGreeterReply'
+    /greeter/{id}:
+        get:
+            tags:
+                - Greeter
+            operationId: Greeter_GetGreeter
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/helloworld.v1.GetGreeterReply'
+    /helloworld/{name}:
+        get:
+            tags:
+                - Greeter
+            operationId: Greeter_SayHello
+            parameters:
+                - name: name
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/helloworld.v1.HelloReply'
+components:
+    schemas:
+        helloworld.v1.CreateGreeterReply:
+            type: object
+            properties:
+                id:
+                    type: string
+                hello:
+                    type: string
+        helloworld.v1.GetGreeterReply:
+            type: object
+            properties:
+                id:
+                    type: string
+                hello:
+                    type: string
+        helloworld.v1.HelloReply:
+            type: object
+            properties:
+                message:
+                    type: string
+tags:
+    - name: Greeter
