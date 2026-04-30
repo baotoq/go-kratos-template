@@ -40,3 +40,4 @@ deploy/helm/tmpcharts/
 
 # Git worktrees
 .worktrees/
+.omc/

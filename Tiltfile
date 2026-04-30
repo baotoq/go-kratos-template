@@ -9,7 +9,7 @@ docker_prune_settings(num_builds=1, keep_recent=1)
 config.define_bool('continue', args=False, usage='Start Delve with --continue')
 dlv_continue = config.parse().get('continue', False)
 
-dlv_flags = '--headless --listen=:2345 --api-version=2 --accept-multiclient --only-same-user=false --log'
+dlv_flags = '--headless --listen=:2345 --accept-multiclient --only-same-user=false --log'
 if dlv_continue:
     dlv_flags += ' --continue'
 

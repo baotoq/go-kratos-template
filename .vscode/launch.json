@@ -6,7 +6,7 @@
       "type": "go",
       "request": "attach",
       "mode": "remote",
-      "debugAdapter": "legacy",
+      "debugAdapter": "dlv-dap",
       "host": "127.0.0.1",
       "port": 2345
     }
