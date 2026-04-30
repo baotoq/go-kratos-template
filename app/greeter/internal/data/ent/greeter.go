@@ -4,8 +4,8 @@ package ent
 
 import (
 	"fmt"
-	"strings"
 	"greeter/app/greeter/internal/data/ent/greeter"
+	"strings"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"

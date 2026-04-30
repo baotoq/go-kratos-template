@@ -5,8 +5,8 @@ allow_k8s_contexts(['docker-desktop', 'orbstack'])
 # Usage:
 #   tilt up                    Delve waits for debugger to attach
 #   tilt up -- --continue      Delve starts immediately (no wait)
-config.define_bool('continue', args=True, usage='Start Delve with --continue')
-dlv_continue = config.parse().get('continue', False)
+config.define_bool('dlv_continue', args=False, usage='Start Delve with --continue')
+dlv_continue = config.parse().get('dlv_continue', False)
 
 dlv_flags = '--headless --listen=:2345 --api-version=2 --accept-multiclient --only-same-user=false --log'
 if dlv_continue:

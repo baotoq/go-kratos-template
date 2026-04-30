@@ -6,9 +6,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"greeter/app/greeter/internal/data/ent/greeter"
 	"reflect"
 	"sync"
-	"greeter/app/greeter/internal/data/ent/greeter"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"

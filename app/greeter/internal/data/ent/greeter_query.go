@@ -5,9 +5,9 @@ package ent
 import (
 	"context"
 	"fmt"
-	"math"
 	"greeter/app/greeter/internal/data/ent/greeter"
 	"greeter/app/greeter/internal/data/ent/predicate"
+	"math"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"

@@ -51,9 +51,6 @@ func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server) *kratos.App {
 }
 
 func main() {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second*10))
-	defer cancel()
-
 	flag.Parse()
 	logger := log.With(log.NewStdLogger(os.Stdout),
 		"ts", log.DefaultTimestamp,
@@ -76,16 +73,33 @@ func main() {
 		panic(err)
 	}
 
-	client, err := dapr.NewClient()
-	if err != nil {
-		panic(err)
+	// Retry Dapr client connection — sidecar may not be ready immediately on pod start.
+	var (
+		daprClient dapr.Client
+		secret     map[string]string
+	)
+	for attempt := 1; ; attempt++ {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		c, err := dapr.NewClient()
+		if err == nil {
+			s, err := c.GetSecret(ctx, "secretstore", "secrets", nil)
+			cancel()
+			if err == nil {
+				daprClient = c
+				secret = s
+				break
+			}
+			c.Close()
+		} else {
+			cancel()
+		}
+		if attempt >= 12 {
+			panic("dapr sidecar not ready after 60s")
+		}
+		log.NewHelper(logger).Infof("waiting for dapr sidecar (attempt %d/12)...", attempt)
+		time.Sleep(5 * time.Second)
 	}
-	defer client.Close()
-
-	secret, err := client.GetSecret(ctx, "secretstore", "secrets", nil)
-	if err != nil {
-		panic(err)
-	}
+	defer daprClient.Close()
 
 	var bc conf.Bootstrap
 	if err := c.Scan(&bc); err != nil {
