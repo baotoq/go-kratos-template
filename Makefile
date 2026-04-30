@@ -13,6 +13,11 @@ wire:
 proto:
 	find app -mindepth 1 -maxdepth 1 -type d -print | xargs -L 1 bash -c 'cd "$$0" && pwd && $(MAKE) proto'
 
+.PHONY: all
+# generate api
+all:
+	find app -mindepth 1 -maxdepth 1 -type d -print | xargs -L 1 bash -c 'cd "$$0" && pwd && $(MAKE) all'
+
 .PHONY: dev
 # start dev environment with tilt
 dev:
