@@ -1,7 +1,7 @@
 package server
 
 import (
-	v1 "greeter/api/helloworld/v1"
+	v1 "greeter/api/greeter/helloworld/v1"
 	"greeter/app/greeter/internal/conf"
 	"greeter/app/greeter/internal/service"
 

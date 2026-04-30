@@ -326,8 +326,8 @@ const file_helloworld_v1_greeter_proto_rawDesc = "" +
 	"\bSayHello\x12\x1b.helloworld.v1.HelloRequest\x1a\x19.helloworld.v1.HelloReply\"\x1a\x82\xd3\xe4\x93\x02\x14\x12\x12/helloworld/{name}\x12x\n" +
 	"\rCreateGreeter\x12#.helloworld.v1.CreateGreeterRequest\x1a!.helloworld.v1.CreateGreeterReply\"\x1f\x82\xd3\xe4\x93\x02\x19\x12\x17/greeter/create/{hello}\x12e\n" +
 	"\n" +
-	"GetGreeter\x12 .helloworld.v1.GetGreeterRequest\x1a\x1e.helloworld.v1.GetGreeterReply\"\x15\x82\xd3\xe4\x93\x02\x0f\x12\r/greeter/{id}BQ\n" +
-	"\x1cdev.kratos.api.helloworld.v1B\x11HelloworldProtoV1P\x01Z\x1cgreeter/api/helloworld/v1;v1b\x06proto3"
+	"GetGreeter\x12 .helloworld.v1.GetGreeterRequest\x1a\x1e.helloworld.v1.GetGreeterReply\"\x15\x82\xd3\xe4\x93\x02\x0f\x12\r/greeter/{id}BY\n" +
+	"\x1cdev.kratos.api.helloworld.v1B\x11HelloworldProtoV1P\x01Z$greeter/api/greeter/helloworld/v1;v1b\x06proto3"
 
 var (
 	file_helloworld_v1_greeter_proto_rawDescOnce sync.Once
