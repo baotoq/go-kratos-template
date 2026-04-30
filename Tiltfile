@@ -1,6 +1,7 @@
 load('ext://restart_process', 'docker_build_with_restart')
 load('ext://helm_resource', 'helm_resource', 'helm_repo')
 allow_k8s_contexts(['docker-desktop', 'orbstack'])
+docker_prune_settings(num_builds=1, keep_recent=1)
 
 # Usage:
 #   tilt up                    Delve waits for debugger to attach

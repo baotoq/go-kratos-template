@@ -13,6 +13,3 @@ data:
     addr: ""
     read_timeout: 1s
     write_timeout: 1s
-  pubsub:
-    name: pubsub
-    topic: events
