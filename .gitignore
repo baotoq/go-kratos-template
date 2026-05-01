@@ -41,3 +41,6 @@ deploy/helm/tmpcharts/
 # Git worktrees
 .worktrees/
 .omc/
+
+# Per-developer dev container env (template at .devcontainer/.env.example)
+.devcontainer/.env

@@ -11,7 +11,12 @@
     "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
     // gh CLI for PR/issue workflows.
     "ghcr.io/devcontainers/features/github-cli:1": {},
-    // kubectl + helm required for `tilt up` (deploys to local cluster).
+    // kubectl + helm required for `tilt up` (deploys to local cluster). Skip minikube — use host Docker Desktop K8s.
+    "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {
+      "version": "latest",
+      "helm": "latest",
+      "minikube": "none"
+    },
     // Dapr CLI (official feature).
     "ghcr.io/dapr/cli/dapr-cli:0": {},
     // protoc compiler (required for `make api` and `make config`).
@@ -32,12 +37,18 @@
     // Share full host Claude folder (auth, settings, memories).
     "source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,type=bind,consistency=cached",
     // Persist the Go module cache and built tools across rebuilds.
-    "source=${localWorkspaceFolderBasename}-go-${devcontainerId},target=/home/vscode/go,type=volume"
+    "source=${localWorkspaceFolderBasename}-go-${devcontainerId},target=/home/vscode/go,type=volume",
+    // Bind host kube config into a staging path; post-create.sh installs a shell hook that copies it to ~/.kube and rewrites localhost → host.docker.internal on each new shell.
+    "source=${localEnv:HOME}/.kube,target=/usr/local/share/kube-localhost,type=bind,readonly"
   ],
 
-  "initializeCommand": "",
+  // Ensure host mount sources exist before the container starts (avoids bind errors on fresh machines).
+  "initializeCommand": "bash .devcontainer/init.sh",
 
-  // Pass API keys from the host environment into the container.
+  // Load per-developer secrets / overrides from .devcontainer/.env (gitignored; see .env.example).
+  "runArgs": ["--env-file", ".devcontainer/.env"],
+
+  // Shared defaults. Per-developer overrides go in .devcontainer/.env.
   "remoteEnv": {},
 
   // Configure tool-specific properties.
