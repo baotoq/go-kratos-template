@@ -53,7 +53,7 @@ app/greeter/
       ent/                     ← generated ORM code (do not edit by hand)
 ```
 
-**Dependency rule:** `service → biz → data`. `biz` defines interfaces (`GreeterRepo`, `EventRepo`); `data` implements them. `biz` never imports `data`.
+**Dependency rule:** `service → biz → data`. `biz` defines repository interfaces; `data` implements them. `biz` never imports `data`. Currently `GreeterRepo` is implemented in `data/greeter.go`; `EventRepo` is declared in `biz/event.go` but has no concrete implementation yet — wire it up via Dapr pubsub when adding event publishing.
 
 ### Dependency injection
 
@@ -61,7 +61,7 @@ Google Wire is used. `wire.go` (build-tag-guarded) declares provider sets; `wire
 
 ### Config & secrets
 
-Config is loaded from `configs/config.yaml` via kratos `config/file`. **Secrets are injected at runtime by Dapr** (`secretstore` component). `main.go` retries the Dapr sidecar connection up to 12× (60s total) on startup, then overwrites `bc.Data.Database.Source` and `bc.Data.Redis.Addr` from the secret store.
+Config is loaded from `app/greeter/configs/config.yaml` via kratos `config/file`. **Secrets are injected at runtime by Dapr** (`secretstore` component). `main.go` retries the Dapr sidecar connection up to 12× (60s total) on startup, then overwrites `bc.Data.Database.Source` (from secret key `DATABASE_CONNECTION_STRING`) and `bc.Data.Redis.Addr` (from `REDIS_HOST`). The yaml ships those fields blank — leave them blank in committed config and provide values via the secret store.
 
 ### Dapr integration
 
@@ -95,9 +95,20 @@ Port forwards: HTTP `8000`, gRPC `9000`, Delve `7000`, Postgres `5432`, Redis `6
 
 Use TDD: write tests first, confirm they fail for the right reason, then implement the minimal fix and re-run. Do not write maintenance-heavy tests (no exhaustive mocks, no tests that re-assert framework behavior, no tests that break on every refactor). Test behavior, not implementation.
 
+Tests use **testcontainers-go** to spin up real Postgres/Redis containers — there are no DB mocks. `make test` therefore requires Docker (Docker Desktop / OrbStack / Colima) to be running. Helpers `startPostgres(t)` / `startRedis(t)` live in `app/greeter/internal/data/testhelper_test.go`; containers are torn down via `t.Cleanup`.
+
 Use `github.com/stretchr/testify/assert` for assertions. Structure every test with AAA comments:
 ```go
 // Arrange
 // Act
 // Assert
 ```
+
+See `docs/integration-tests.md` for the full pattern.
+
+## Further reading
+
+Topic-specific docs live in `docs/`:
+- `docs/dapr.md` — Dapr setup and component conventions
+- `docs/ent-go.md` — ent schema authoring and migration workflow
+- `docs/integration-tests.md` — testcontainers patterns

@@ -34,9 +34,14 @@
   "remoteUser": "vscode",
 
   "mounts": [
-    "source=${localEnv:HOME}/.gitconfig,target=/home/vscode/.gitconfig,type=bind,readonly",
+    // Note: .gitconfig is auto-copied into the container by the Dev Containers
+    // extension, which also rewrites credential.helper to forward to the host.
+    // Bind-mounting it caused EBUSY when the extension tried to rewrite the file.
+
     // Share full host Claude folder (auth, settings, memories).
-    "source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,type=bind,readonly,consistency=cached",
+    "source=${localEnv:HOME}/.claude.json,target=/home/vscode/.claude.json,type=bind,readonly",
+
     // Persist the Go module cache and built tools across rebuilds.
     "source=${localWorkspaceFolderBasename}-go-${devcontainerId},target=/home/vscode/go,type=volume",
     // Bind host kube config into a staging path; post-create.sh installs a shell hook that copies it to ~/.kube and rewrites localhost → host.docker.internal on each new shell.
