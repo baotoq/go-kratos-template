@@ -1,0 +1,114 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/go
+{
+  "$schema": "https://raw.githubusercontent.com/devcontainers/spec/refs/heads/main/schemas/devContainer.schema.json",
+  "name": "go-mall",
+  "image": "mcr.microsoft.com/devcontainers/go:2-1.26-bookworm",
+
+  // Features to add to the dev container. More info: https://containers.dev/features.
+  "features": {
+    // Mount host Docker socket — lighter than DinD; required for testcontainers-go and Tilt.
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
+    // gh CLI for PR/issue workflows.
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    // kubectl + helm required for `tilt up` (deploys to local cluster).
+    "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {
+      "version": "latest",
+      "helm": "latest",
+      "minikube": "none"
+    },
+    // Dapr CLI (official feature).
+    "ghcr.io/dapr/cli/dapr-cli:0": {},
+    // protoc compiler (required for `make api` and `make config`).
+    "ghcr.io/devcontainers-extra/features/protoc:1": {},
+    // Tilt for `make dev` / `make debug`.
+    "ghcr.io/audacioustux/devcontainers/tilt:1": {},
+    // Node.js LTS for web/ (Next.js 16 requires Node 20+).
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "lts"
+    },
+    "ghcr.io/devcontainers-extra/features/claude-code:2": {}
+  },
+
+  "remoteUser": "vscode",
+
+  "mounts": [
+    "source=${localEnv:HOME}/.gitconfig,target=/home/vscode/.gitconfig,type=bind,readonly",
+    // Exposes host kube contexts (docker-desktop / orbstack) required by `tilt up`.
+    "source=${localEnv:HOME}/.kube,target=/home/vscode/.kube,type=bind,readonly,consistency=cached",
+    // Share full host Claude folder (auth, settings, memories).
+    "source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,type=bind,consistency=cached",
+    // Persist the Go module cache and built tools across rebuilds.
+    "source=${localWorkspaceFolderBasename}-go-${devcontainerId},target=/home/vscode/go,type=volume"
+  ],
+
+  "initializeCommand": "",
+
+  // Pass API keys from the host environment into the container.
+  "remoteEnv": {},
+
+  // Configure tool-specific properties.
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "go.toolsManagement.autoUpdate": false,
+        "gopls": {
+          "ui.semanticTokens": true
+        },
+        "[go]": {
+          "editor.defaultFormatter": "golang.go",
+          "editor.formatOnSave": true,
+          "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+          }
+        },
+        "files.trimTrailingWhitespace": true,
+        "files.insertFinalNewline": true,
+        "files.trimFinalNewlines": true
+      },
+      "extensions": [
+        // Go
+        "golang.go",
+        // AI assistant
+        "anthropic.claude-code",
+        // Protobuf / gRPC
+        "drblury.protobuf-vsc",
+        // Kubernetes, Helm, Dapr YAML manifests
+        "ms-kubernetes-tools.vscode-kubernetes-tools",
+        "redhat.vscode-yaml",
+        // Docker / container management
+        "ms-azuretools.vscode-docker",
+        // Tiltfile syntax
+        "tilt-dev.tiltfile-lsp-support",
+        // Git
+        "eamodio.gitlens",
+        "github.vscode-pull-request-github",
+        "github.vscode-github-actions",
+        // Editor quality
+        "editorconfig.editorconfig",
+        "streetsidesoftware.code-spell-checker",
+        "vscode-icons-team.vscode-icons",
+        // Config / docs
+        "mikestead.dotenv",
+        "yzhang.markdown-all-in-one"
+      ]
+    }
+  },
+
+  // Forward all service, debug, and infrastructure ports used by Tilt.
+  "forwardPorts": [8000, 9000, 7000, 5432, 6379, 5050, 8080, 10350],
+  "portsAttributes": {
+    "3000": { "label": "Next.js", "onAutoForward": "openPreview" },
+    "8000": { "label": "HTTP", "onAutoForward": "silent" },
+    "9000": { "label": "gRPC", "onAutoForward": "silent" },
+    "7000": { "label": "Delve", "onAutoForward": "silent" },
+    "5432": { "label": "Postgres", "onAutoForward": "notify" },
+    "6379": { "label": "Redis", "onAutoForward": "silent" },
+    "5050": { "label": "pgAdmin", "onAutoForward": "notify" },
+    "8080": { "label": "Keycloak", "onAutoForward": "notify" },
+    "10350": { "label": "Tilt Dev", "onAutoForward": "notify" }
+  },
+
+  "postCreateCommand": "bash .devcontainer/post-create.sh"
+}

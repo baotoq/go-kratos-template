@@ -38,7 +38,7 @@ helm_repo('dapr-repo', 'https://dapr.github.io/helm-charts/', labels=['infra'])
 local_resource('patch-dapr-crds',
     cmd="""
     helm status dapr -n dapr-system 2>/dev/null | grep -q 'STATUS: deployed' || \
-        kubectl get crds -o name 2>/dev/null | grep dapr.io | xargs kubectl delete --ignore-not-found
+        kubectl get crds -o name 2>/dev/null | grep dapr.io | xargs -r kubectl delete --ignore-not-found
     """,
     resource_deps=['dapr-repo'],
     labels=['infra'],
