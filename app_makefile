@@ -20,9 +20,9 @@ run:
 	cd cmd/server && go run .
 
 .PHONY: test
-# test
+# test (requires Docker — testcontainers-go integration tests run alongside units)
 test:
-	go test -v ./...
+	go test -count=1 -v ./...
 
 .PHONY: docker
 # build docker image

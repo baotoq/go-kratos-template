@@ -16,15 +16,16 @@ else
 endif
 
 .PHONY: init
-# init env
+# init env (versions pinned to keep generated code reproducible across machines;
+# bump deliberately and align protobuf/grpc/kratos/wire/ent with go.mod)
 init:
-	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
-	go install github.com/go-kratos/kratos/cmd/kratos/v2@latest
-	go install github.com/go-kratos/kratos/cmd/protoc-gen-go-http/v2@latest
-	go install github.com/google/gnostic/cmd/protoc-gen-openapi@latest
-	go install github.com/google/wire/cmd/wire@latest
-	go install entgo.io/ent/cmd/ent@latest
+	go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11
+	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1
+	go install github.com/go-kratos/kratos/cmd/kratos/v2@v2.9.2
+	go install github.com/go-kratos/kratos/cmd/protoc-gen-go-http/v2@v2.9.2
+	go install github.com/google/gnostic/cmd/protoc-gen-openapi@v0.7.0
+	go install github.com/google/wire/cmd/wire@v0.6.0
+	go install entgo.io/ent/cmd/ent@v0.14.6
 
 .PHONY: config
 # generate internal proto
@@ -49,6 +50,11 @@ api:
 # build
 build:
 	mkdir -p bin/ && go build -ldflags "-X main.Version=$(VERSION)" -o ./bin/greeter ./app/greeter/cmd/server
+
+.PHONY: test
+# test (requires Docker — testcontainers-go integration tests run alongside units)
+test:
+	go test -count=1 -v ./...
 
 .PHONY: generate
 # generate

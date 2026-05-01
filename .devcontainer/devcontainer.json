@@ -2,19 +2,20 @@
 // README at: https://github.com/devcontainers/templates/tree/main/src/go
 {
   "$schema": "https://raw.githubusercontent.com/devcontainers/spec/refs/heads/main/schemas/devContainer.schema.json",
-  "name": "go-mall",
+  "name": "go-kratos-template",
   "image": "mcr.microsoft.com/devcontainers/go:2-1.26-bookworm",
 
   // Features to add to the dev container. More info: https://containers.dev/features.
   "features": {
-    // Mount host Docker socket — lighter than DinD; required for testcontainers-go and Tilt.
+    // Mount host Docker socket — lighter than DinD; needed by testcontainers-go and Tilt's image builds.
     "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
     // gh CLI for PR/issue workflows.
     "ghcr.io/devcontainers/features/github-cli:1": {},
     // kubectl + helm required for `tilt up` (deploys to local cluster). Skip minikube — use host Docker Desktop K8s.
+    // Pinned for reproducibility; bump deliberately.
     "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {
-      "version": "latest",
-      "helm": "latest",
+      "version": "1.32.0",
+      "helm": "3.17.0",
       "minikube": "none"
     },
     // Dapr CLI (official feature).
@@ -101,16 +102,14 @@
   },
 
   // Forward all service, debug, and infrastructure ports used by Tilt.
-  "forwardPorts": [8000, 9000, 7000, 5432, 6379, 5050, 8080, 10350],
+  "forwardPorts": [8000, 9000, 7000, 5432, 6379, 5050, 10350],
   "portsAttributes": {
-    "3000": { "label": "Next.js", "onAutoForward": "openPreview" },
     "8000": { "label": "HTTP", "onAutoForward": "silent" },
     "9000": { "label": "gRPC", "onAutoForward": "silent" },
     "7000": { "label": "Delve", "onAutoForward": "silent" },
     "5432": { "label": "Postgres", "onAutoForward": "notify" },
     "6379": { "label": "Redis", "onAutoForward": "silent" },
     "5050": { "label": "pgAdmin", "onAutoForward": "notify" },
-    "8080": { "label": "Keycloak", "onAutoForward": "notify" },
     "10350": { "label": "Tilt Dev", "onAutoForward": "notify" }
   },
 

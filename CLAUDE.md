@@ -90,3 +90,14 @@ Port forwards: HTTP `8000`, gRPC `9000`, Delve `7000`, Postgres `5432`, Redis `6
 - Error reasons: defined in `error_reason.proto` as an enum; errors use `v1.ErrorReason_XXX.String()` as the reason field
 - Internal config proto: `internal/conf/conf.proto` → `make config`
 - `third_party/` holds vendored proto imports (google, validate)
+
+## Testing
+
+Use TDD: write tests first, confirm they fail for the right reason, then implement the minimal fix and re-run. Do not write maintenance-heavy tests (no exhaustive mocks, no tests that re-assert framework behavior, no tests that break on every refactor). Test behavior, not implementation.
+
+Use `github.com/stretchr/testify/assert` for assertions. Structure every test with AAA comments:
+```go
+// Arrange
+// Act
+// Assert
+```
