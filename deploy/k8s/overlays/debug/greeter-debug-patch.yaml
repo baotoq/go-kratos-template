@@ -8,10 +8,12 @@ spec:
       containers:
         - name: greeter
           ports:
-            - containerPort: 8000
-            - containerPort: 9000
-            - containerPort: 7000
-              name: dlv
+            - name: http
+              containerPort: 8000
+            - name: grpc
+              containerPort: 9000
+            - name: dlv
+              containerPort: 7000
           # Disable probes — hitting a breakpoint pauses the process and
           # will trigger pod restarts if probes are active
           readinessProbe: null

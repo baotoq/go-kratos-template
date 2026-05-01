@@ -2,6 +2,16 @@ load('ext://restart_process', 'docker_build_with_restart')
 load('ext://helm_resource', 'helm_resource', 'helm_repo')
 allow_k8s_contexts(['docker-desktop', 'orbstack'])
 docker_prune_settings(num_builds=1, keep_recent=1)
+# Disable secret scrubbing in logs: dev-only, and false positives (e.g. postgres
+# username 'greeter' matches the image name) make build output unreadable.
+secret_settings(disable_scrub=True)
+# Tilt doesn't auto-detect OrbStack as a local cluster (and the rewritten
+# kubeconfig URL inside the devcontainer hides the localhost hint), so it tries
+# to push built images. Use ttl.sh — Tilt's recommended ephemeral registry —
+# so push/pull works without provisioning local registry infra.
+# Images expire automatically (default 1h). Replace with a self-hosted
+# registry if offline dev is required.
+default_registry('ttl.sh')
 
 # Usage:
 #   tilt up                    Delve waits for debugger to attach
@@ -15,7 +25,7 @@ if dlv_continue:
 
 entrypoint = ['sh', '-c', 'exec dlv exec /app/greeter ' + dlv_flags + ' -- -conf /data/conf']
 
-compile_cmd = 'mkdir -p dist && GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -gcflags="all=-N -l" -ldflags "-X main.Version=dev" -o ./dist/greeter ./app/greeter/cmd/server'
+compile_cmd = 'mkdir -p dist && GOOS=linux GOARCH=$(go env GOHOSTARCH) CGO_ENABLED=0 go build -gcflags="all=-N -l" -ldflags "-X main.Version=dev" -o ./dist/greeter ./app/greeter/cmd/server'
 
 # Compile locally on every Go source change.
 # Result is synced into the running container — no full image rebuild needed.

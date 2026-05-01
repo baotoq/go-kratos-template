@@ -1,5 +1,10 @@
 {
   "features": {
+    "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {
+      "version": "1.0.5",
+      "resolved": "ghcr.io/anthropics/devcontainer-features/claude-code@sha256:cfc2e7d3e9fd3b9b01f8d5cb158508a884c8c0ede2e23ed10f32dea5d4ffe69a",
+      "integrity": "sha256:cfc2e7d3e9fd3b9b01f8d5cb158508a884c8c0ede2e23ed10f32dea5d4ffe69a"
+    },
     "ghcr.io/audacioustux/devcontainers/tilt:1": {
       "version": "1.0.1",
       "resolved": "ghcr.io/audacioustux/devcontainers/tilt@sha256:d9f2c97288b5cc0b033891087d092facee3d908aba6b51145340cf8cf27b82f5",
@@ -9,11 +14,6 @@
       "version": "0.1.0",
       "resolved": "ghcr.io/dapr/cli/dapr-cli@sha256:e935ef5a3e52f5cba9e87ccda401d380b8426c965068574cad0403e430c459dc",
       "integrity": "sha256:e935ef5a3e52f5cba9e87ccda401d380b8426c965068574cad0403e430c459dc"
-    },
-    "ghcr.io/devcontainers-extra/features/claude-code:2": {
-      "version": "2.0.0",
-      "resolved": "ghcr.io/devcontainers-extra/features/claude-code@sha256:37b0d444a704021ee5f6d24242a4621bf337867d110e4e3c06b863a3a78122ac",
-      "integrity": "sha256:37b0d444a704021ee5f6d24242a4621bf337867d110e4e3c06b863a3a78122ac"
     },
     "ghcr.io/devcontainers-extra/features/protoc:1": {
       "version": "1.0.3",

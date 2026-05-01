@@ -55,7 +55,7 @@ build:
 .PHONY: test
 # test (requires Docker — testcontainers-go integration tests run alongside units)
 test:
-	go test -count=1 -v ./...
+	go test -race -count=1 -v ./...
 
 .PHONY: generate
 # generate

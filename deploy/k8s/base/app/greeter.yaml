@@ -6,8 +6,10 @@ spec:
   ports:
     - name: http
       port: 8000
+      targetPort: http
     - name: grpc
       port: 9000
+      targetPort: grpc
   selector:
     app: greeter
 ---
@@ -32,8 +34,24 @@ spec:
         - name: greeter
           image: greeter
           ports:
-            - containerPort: 8000
-            - containerPort: 9000
+            - name: http
+              containerPort: 8000
+            - name: grpc
+              containerPort: 9000
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 2
+            periodSeconds: 5
+            failureThreshold: 3
           volumeMounts:
             - name: config
               mountPath: /data/conf

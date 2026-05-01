@@ -28,7 +28,7 @@
     "ghcr.io/devcontainers/features/node:1": {
       "version": "lts"
     },
-    "ghcr.io/devcontainers-extra/features/claude-code:2": {}
+    "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {}
   },
 
   "remoteUser": "vscode",
@@ -38,9 +38,12 @@
     // extension, which also rewrites credential.helper to forward to the host.
     // Bind-mounting it caused EBUSY when the extension tried to rewrite the file.
 
-    // Share full host Claude folder (auth, settings, memories).
-    "source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,type=bind,readonly,consistency=cached",
-    "source=${localEnv:HOME}/.claude.json,target=/home/vscode/.claude.json,type=bind,readonly",
+    // Per-workspace named volume for Claude Code state (auth tokens, settings,
+    // session history). Survives rebuilds; isolated from host so it works
+    // even when the host stores credentials in macOS Keychain (which Linux
+    // can't read). Sign in once with `claude` inside the container.
+    // Pattern from anthropics/claude-code reference devcontainer.
+    "source=${localWorkspaceFolderBasename}-claude-config,target=/home/vscode/.claude,type=volume",
 
     // Persist the Go module cache and built tools across rebuilds.
     "source=${localWorkspaceFolderBasename}-go-${devcontainerId},target=/home/vscode/go,type=volume",
@@ -52,7 +55,10 @@
   "initializeCommand": "bash .devcontainer/init.sh",
 
   // Load per-developer secrets / overrides from .devcontainer/.env (gitignored; see .env.example).
-  "runArgs": ["--env-file", ".devcontainer/.env"],
+  "runArgs": [
+    "--env-file", ".devcontainer/.env",
+    "--name", "devcontainer-${localWorkspaceFolderBasename}-${devcontainerId}"
+  ],
 
   // Shared defaults. Per-developer overrides go in .devcontainer/.env.
   "remoteEnv": {},

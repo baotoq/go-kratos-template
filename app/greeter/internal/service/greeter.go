@@ -30,7 +30,7 @@ func (s *GreeterService) CreateGreeter(ctx context.Context, in *v1.CreateGreeter
 	if err != nil {
 		return nil, err
 	}
-	return &v1.CreateGreeterReply{Id: int64(g.ID), Hello: g.Hello}, nil
+	return &v1.CreateGreeterReply{Id: g.ID, Hello: g.Hello}, nil
 }
 
 func (s *GreeterService) GetGreeter(ctx context.Context, in *v1.GetGreeterRequest) (*v1.GetGreeterReply, error) {
@@ -38,5 +38,5 @@ func (s *GreeterService) GetGreeter(ctx context.Context, in *v1.GetGreeterReques
 	if err != nil {
 		return nil, err
 	}
-	return &v1.GetGreeterReply{Id: int64(g.ID), Hello: g.Hello}, nil
+	return &v1.GetGreeterReply{Id: g.ID, Hello: g.Hello}, nil
 }
