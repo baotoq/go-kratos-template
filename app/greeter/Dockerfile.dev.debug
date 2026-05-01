@@ -16,5 +16,5 @@ COPY dist/greeter            /app/greeter
 
 WORKDIR /app
 
-EXPOSE 8000 9000 2345
+EXPOSE 8000 9000 7000
 VOLUME /data/conf

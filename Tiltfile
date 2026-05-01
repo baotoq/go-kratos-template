@@ -9,7 +9,7 @@ docker_prune_settings(num_builds=1, keep_recent=1)
 config.define_bool('continue', args=False, usage='Start Delve with --continue')
 dlv_continue = config.parse().get('continue', False)
 
-dlv_flags = '--headless --listen=:2345 --accept-multiclient --only-same-user=false --log'
+dlv_flags = '--headless --listen=:7000 --accept-multiclient --only-same-user=false --log'
 if dlv_continue:
     dlv_flags += ' --continue'
 
@@ -94,7 +94,7 @@ k8s_resource(
 )
 
 k8s_resource('greeter',
-    port_forwards=['8000:8000', '9000:9000', '2345:2345'],
+    port_forwards=['8000:8000', '9000:9000', '7000:7000'],
     resource_deps=['postgres', 'redis', 'compile', 'dapr', 'dapr-components'],
     labels=['app'],
 )

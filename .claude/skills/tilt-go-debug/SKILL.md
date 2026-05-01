@@ -10,7 +10,7 @@ Verified working setup for remote-debugging Go services running inside Kubernete
 ## Architecture
 
 ```
-Mac (VS Code dlv-dap) ──DAP──▶ Tilt port-forward ──▶ Delve :2345 ──▶ Go binary
+Mac (VS Code dlv-dap) ──DAP──▶ Tilt port-forward ──▶ Delve :7000 ──▶ Go binary
 ```
 
 Binary compiled on Mac with `-gcflags="all=-N -l"`, synced into container via `live_update`. Delve wraps the binary. VS Code attaches directly via DAP protocol.
@@ -21,7 +21,7 @@ Binary compiled on Mac with `-gcflags="all=-N -l"`, synced into container via `l
 config.define_bool('continue', args=False, usage='Start Delve with --continue')
 dlv_continue = config.parse().get('continue', False)
 
-dlv_flags = '--headless --listen=:2345 --accept-multiclient --only-same-user=false --log'
+dlv_flags = '--headless --listen=:7000 --accept-multiclient --only-same-user=false --log'
 if dlv_continue:
     dlv_flags += ' --continue'
 
@@ -63,7 +63,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
 COPY --from=tools /go/bin/dlv  /usr/local/bin/dlv
 COPY dist/<svc>               /app/<svc>
 WORKDIR /app
-EXPOSE 8000 9000 2345
+EXPOSE 8000 9000 7000
 VOLUME /data/conf
 ```
 
@@ -84,7 +84,7 @@ spec:
           ports:
             - containerPort: 8000
             - containerPort: 9000
-            - containerPort: 2345
+            - containerPort: 7000
               name: dlv
           readinessProbe: null
           livenessProbe: null
@@ -98,12 +98,12 @@ spec:
 
 ## 5. Port Forwards (Multi-Service)
 
-Container port is always `2345`. Each service gets a unique **host** port.
+Container port is always `7000`. Each service gets a unique **host** port.
 
 ```python
-k8s_resource('greeter', port_forwards=['8000:8000', '9000:9000', '2345:2345'], ...)
-k8s_resource('catalog', port_forwards=['8001:8000', '9001:9000', '2346:2345'], ...)
-# next service: 2347:2345, etc.
+k8s_resource('greeter', port_forwards=['8000:8000', '9000:9000', '7000:7000'], ...)
+k8s_resource('catalog', port_forwards=['8001:8000', '9001:9000', '7001:7000'], ...)
+# next service: 7002:7000, etc.
 ```
 
 ## 6. VS Code launch.json
@@ -119,7 +119,7 @@ k8s_resource('catalog', port_forwards=['8001:8000', '9001:9000', '2346:2345'], .
       "mode": "remote",
       "debugAdapter": "dlv-dap",
       "host": "127.0.0.1",
-      "port": 2345
+      "port": 7000
     },
     {
       "name": "Attach to catalog in k8s",
@@ -128,7 +128,7 @@ k8s_resource('catalog', port_forwards=['8001:8000', '9001:9000', '2346:2345'], .
       "mode": "remote",
       "debugAdapter": "dlv-dap",
       "host": "127.0.0.1",
-      "port": 2346
+      "port": 7001
     }
   ],
   "compounds": [
@@ -185,7 +185,7 @@ debug:
 lsof -i :<host_port>   # Tilt process should be LISTENing
 ```
 
-- Pod logs contain: `API server listening at: [::]:2345`
+- Pod logs contain: `API server listening at: [::]:7000`
 - VS Code attach completes without error popup
 - Breakpoint shows solid red dot (verified)
 - HTTP request → VS Code pauses at breakpoint

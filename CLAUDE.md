@@ -14,7 +14,7 @@ make generate    # run go generate ./... + go mod tidy (wire + ent)
 make build       # build binary → ./bin/greeter
 make all         # api + config + generate
 make dev         # tilt up --continue (dev env, Delve starts immediately)
-make debug       # tilt up (Delve waits for debugger to attach on :2345)
+make debug       # tilt up (Delve waits for debugger to attach on :7000)
 ```
 
 ### Per-app (run from app/greeter/)
@@ -78,11 +78,11 @@ ent ORM with PostgreSQL (`lib/pq` driver). Schema lives in `internal/data/ent/sc
 `tilt up` / `make dev` targets Docker Desktop or OrbStack (`allow_k8s_contexts`). The workflow:
 1. `compile` local resource builds a Linux binary into `./dist/greeter` on every Go source change
 2. Binary is synced into the running container — no image rebuild
-3. Delve debugger runs inside the container; VS Code launch config at `.vscode/launch.json` connects to `:2345`
+3. Delve debugger runs inside the container; VS Code launch config at `.vscode/launch.json` connects to `:7000`
 4. Helm chart at `deploy/helm/` provisions Postgres, Redis, pgAdmin in the `greeter` namespace
 5. Dapr is installed via Helm into `dapr-system` namespace
 
-Port forwards: HTTP `8000`, gRPC `9000`, Delve `2345`, Postgres `5432`, Redis `6379`, pgAdmin `5050`.
+Port forwards: HTTP `8000`, gRPC `9000`, Delve `7000`, Postgres `5432`, Redis `6379`, pgAdmin `5050`.
 
 ### Proto conventions
 

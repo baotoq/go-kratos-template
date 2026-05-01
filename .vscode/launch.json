@@ -8,7 +8,7 @@
       "mode": "remote",
       "debugAdapter": "dlv-dap",
       "host": "127.0.0.1",
-      "port": 2345
+      "port": 7000
     }
   ]
 }
