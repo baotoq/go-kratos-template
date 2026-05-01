@@ -16,15 +16,16 @@ else
 endif
 
 .PHONY: init
-# init env (versions pinned to keep generated code reproducible across machines;
-# bump deliberately and align protobuf/grpc/kratos/wire/ent with go.mod)
+# init env (versions pinned to keep generated code reproducible across machines).
+# kratos cmd subpackages have no semver tags — pin to a pseudo-version.
+# protoc-gen-openapi: v0.6.3 is the newest tagged release of gnostic.
 init:
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1
-	go install github.com/go-kratos/kratos/cmd/kratos/v2@v2.9.2
-	go install github.com/go-kratos/kratos/cmd/protoc-gen-go-http/v2@v2.9.2
-	go install github.com/google/gnostic/cmd/protoc-gen-openapi@v0.7.0
-	go install github.com/google/wire/cmd/wire@v0.6.0
+	go install github.com/go-kratos/kratos/cmd/kratos/v2@v2.0.0-20260404020628-f149714c1d54
+	go install github.com/go-kratos/kratos/cmd/protoc-gen-go-http/v2@v2.0.0-20260404020628-f149714c1d54
+	go install github.com/google/gnostic/cmd/protoc-gen-openapi@v0.7.1
+	go install github.com/google/wire/cmd/wire@v0.7.0
 	go install entgo.io/ent/cmd/ent@v0.14.6
 
 .PHONY: config
