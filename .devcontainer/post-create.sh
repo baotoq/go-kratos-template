@@ -3,7 +3,6 @@ set -euo pipefail
 
 # Named volumes are owned by root on first mount; reclaim them for the current user.
 sudo chown -R "$(id -u):$(id -g)" \
-  "$HOME/.claude" \
   "$HOME/.cache/go-build" \
   /go
 
@@ -11,4 +10,5 @@ sudo chown -R "$(id -u):$(id -g)" \
 #make init
 
 # Run modular post-create steps.
+bash "$(dirname "$0")/post-create/claude.sh"
 bash "$(dirname "$0")/post-create/k8s.sh"
