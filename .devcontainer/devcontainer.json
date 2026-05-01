@@ -12,11 +12,6 @@
     // gh CLI for PR/issue workflows.
     "ghcr.io/devcontainers/features/github-cli:1": {},
     // kubectl + helm required for `tilt up` (deploys to local cluster).
-    "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {
-      "version": "latest",
-      "helm": "latest",
-      "minikube": "none"
-    },
     // Dapr CLI (official feature).
     "ghcr.io/dapr/cli/dapr-cli:0": {},
     // protoc compiler (required for `make api` and `make config`).
@@ -34,8 +29,6 @@
 
   "mounts": [
     "source=${localEnv:HOME}/.gitconfig,target=/home/vscode/.gitconfig,type=bind,readonly",
-    // Exposes host kube contexts (docker-desktop / orbstack) required by `tilt up`.
-    "source=${localEnv:HOME}/.kube,target=/home/vscode/.kube,type=bind,readonly,consistency=cached",
     // Share full host Claude folder (auth, settings, memories).
     "source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,type=bind,consistency=cached",
     // Persist the Go module cache and built tools across rebuilds.
