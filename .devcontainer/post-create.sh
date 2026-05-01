@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Named volumes are owned by root on first mount; reclaim ~/.claude for vscode.
-sudo chown -R "$(id -u):$(id -g)" "$HOME/.claude"
-sudo chown -R "$(id -u):$(id -g)" "$HOME/go"
+# Named volumes are owned by root on first mount; reclaim them for the current user.
+sudo chown -R "$(id -u):$(id -g)" \
+  "$HOME/.claude" \
+  "$HOME/.cache/go-build" \
+  /go
 
 # Install Go protoc plugins + Wire + ent CLI (defined in Makefile `init` target)
 #make init

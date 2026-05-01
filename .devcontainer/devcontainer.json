@@ -45,8 +45,11 @@
     // Pattern from anthropics/claude-code reference devcontainer.
     "source=${localWorkspaceFolderBasename}-claude-config,target=/home/vscode/.claude,type=volume",
 
-    // Persist the Go module cache and built tools across rebuilds.
-    "source=${localWorkspaceFolderBasename}-go-${devcontainerId},target=/home/vscode/go,type=volume",
+    // Persist Go caches across rebuilds. GOPATH=/go in the base image (modules + tools);
+    // GOCACHE defaults to ~/.cache/go-build (compiled package objects for incremental builds).
+    "source=${localWorkspaceFolderBasename}-go,target=/go,type=volume",
+    "source=${localWorkspaceFolderBasename}-go-build,target=/home/vscode/.cache/go-build,type=volume",
+
     // Bind host kube config into a staging path; post-create.sh installs a shell hook that copies it to ~/.kube and rewrites localhost → host.docker.internal on each new shell.
     "source=${localEnv:HOME}/.kube,target=/usr/local/share/kube-localhost,type=bind,readonly"
   ],
