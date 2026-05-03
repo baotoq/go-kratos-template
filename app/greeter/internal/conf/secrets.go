@@ -6,13 +6,13 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
 	"github.com/go-kratos/kratos/v2/log"
 )
 
-// SecretStore is the minimal interface LoadSecrets needs from a secret backend.
-// Keeping the dependency one method wide makes the function trivial to fake.
+// SecretStore is the minimal interface LoadSecrets needs from a Dapr-style
+// secret backend. dapr.Client satisfies it structurally.
 type SecretStore interface {
+	Wait(ctx context.Context, timeout time.Duration) error
 	GetSecret(ctx context.Context, storeName, key string, meta map[string]string) (map[string]string, error)
 }
 
@@ -22,55 +22,34 @@ const (
 	secretTagKey    = "secret"
 )
 
-// Retry knobs are vars (not consts) so tests can shrink them.
-var (
-	secretLoadAttempts = 12
-	secretLoadInterval = 5 * time.Second
-	secretCallTimeout  = 5 * time.Second
-)
+// secretWaitTimeout is a var so tests can shrink it.
+var secretWaitTimeout = 60 * time.Second
 
 // Secrets holds runtime values pulled from the secret store. Each field's
-// `secret:"..."` tag is the bundle key the value is read from; LoadSecrets
+// `secret:"..."` tag is the secret key the value is read from; LoadSecrets
 // requires every tagged field to have a non-empty value.
 type Secrets struct {
 	DatabaseSource string `secret:"DATABASE_CONNECTION_STRING"`
 	RedisHost      string `secret:"REDIS_HOST"`
 }
 
-// LoadSecrets retries the secret store until it responds, then maps the bundle
-// into a Secrets struct and verifies every tagged field is set.
-// The caller owns the store lifecycle.
+// LoadSecrets blocks until the sidecar reports ready, then fetches the secret
+// bundle in one GetSecret call and maps it onto a Secrets struct, verifying
+// every tagged field is non-empty. The caller owns the store lifecycle.
 func LoadSecrets(ctx context.Context, store SecretStore, logger *log.Helper) (*Secrets, error) {
-	var (
-		raw     map[string]string
-		attempt int
-	)
-	op := func() error {
-		attempt++
-		callCtx, cancel := context.WithTimeout(ctx, secretCallTimeout)
-		defer cancel()
-		s, err := store.GetSecret(callCtx, secretStoreName, secretBundle, nil)
-		if err != nil {
-			return err
-		}
-		raw = s
-		return nil
+	logger.Info("waiting for secret store sidecar")
+	if err := store.Wait(ctx, secretWaitTimeout); err != nil {
+		return nil, fmt.Errorf("secret store not ready after %s: %w", secretWaitTimeout, err)
 	}
-	notify := func(err error, _ time.Duration) {
-		logger.Infof("waiting for secret store (attempt %d/%d): %v", attempt, secretLoadAttempts, err)
-	}
-	bo := backoff.WithContext(
-		backoff.WithMaxRetries(backoff.NewConstantBackOff(secretLoadInterval), uint64(secretLoadAttempts-1)),
-		ctx,
-	)
-	if err := backoff.RetryNotify(op, bo, notify); err != nil {
-		return nil, fmt.Errorf("secret store not ready after %s: %w", time.Duration(secretLoadAttempts)*secretLoadInterval, err)
+	raw, err := store.GetSecret(ctx, secretStoreName, secretBundle, nil)
+	if err != nil {
+		return nil, fmt.Errorf("get secret bundle %q: %w", secretBundle, err)
 	}
 	return mapSecrets(raw)
 }
 
-// mapSecrets copies tagged fields from raw into a Secrets struct, returning an
-// error if any tagged field is missing or empty.
+// mapSecrets walks the Secrets struct and copies each tagged field's value out
+// of raw. It returns an error if any tagged field is missing or empty.
 func mapSecrets(raw map[string]string) (*Secrets, error) {
 	var s Secrets
 	v := reflect.ValueOf(&s).Elem()
