@@ -1,0 +1,22 @@
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: statestore
+  namespace: greeter
+spec:
+  type: state.redis
+  version: v1
+  # actorStateStore=true is required so Dapr can persist workflow runtime state.
+  metadata:
+    - name: redisHost
+      secretKeyRef:
+        name: secrets
+        key: REDIS_HOST
+    - name: redisPassword
+      secretKeyRef:
+        name: secrets
+        key: REDIS_PASSWORD
+    - name: actorStateStore
+      value: "true"
+  auth:
+    secretStore: secretstore

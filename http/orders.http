@@ -1,0 +1,23 @@
+### Dapr Workflow — Orders example
+### Compatible with VS Code REST Client and JetBrains HTTP Client.
+### Run `make dev` first; the HTTP server listens on :8000 (port-forwarded by Tilt).
+
+@host = http://localhost:8000
+
+### 1. Schedule a new order workflow
+# Captures the instance_id into the `start` request so the GET below can reuse it.
+# @name start
+POST {{host}}/v1/orders
+Content-Type: application/json
+
+{
+  "item_name": "car",
+  "total_cost": 15000.0
+}
+
+### 2. Poll the workflow status (uses the id from request #1)
+GET {{host}}/v1/orders/{{start.response.body.instance_id}}
+
+### 3. Poll a specific instance by id (paste manually if needed)
+@instance_id = paste-id-here
+GET {{host}}/v1/orders/{{instance_id}}

@@ -1,0 +1,7 @@
+### Health check
+### Compatible with VS Code REST Client and JetBrains HTTP Client.
+
+@host = http://localhost:8000
+
+### Liveness ping (registered in server/http.go)
+GET {{host}}/healthz

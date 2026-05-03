@@ -95,7 +95,7 @@ func main() {
 	bc.Data.Database.Source = secrets.DatabaseSource
 	bc.Data.Redis.Addr = secrets.RedisHost
 
-	app, cleanup, err := wireApp(bc.Server, bc.Data, logger)
+	app, cleanup, err := wireApp(bc.Server, bc.Data, daprClient, logger)
 	if err != nil {
 		panic(fmt.Errorf("wire app: %w", err))
 	}

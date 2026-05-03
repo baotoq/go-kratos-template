@@ -37,7 +37,7 @@ type Secrets struct {
 // bundle in one GetSecret call and maps it onto a Secrets struct, verifying
 // every tagged field is non-empty. The caller owns the store lifecycle.
 func LoadSecrets(ctx context.Context, store SecretStore, logger *log.Helper) (*Secrets, error) {
-	logger.Info("waiting for secret store sidecar")
+	logger.Info("waiting for secret store to be ready")
 	if err := store.Wait(ctx, secretWaitTimeout); err != nil {
 		return nil, fmt.Errorf("secret store not ready after %s: %w", secretWaitTimeout, err)
 	}
@@ -45,6 +45,8 @@ func LoadSecrets(ctx context.Context, store SecretStore, logger *log.Helper) (*S
 	if err != nil {
 		return nil, fmt.Errorf("get secret bundle %q: %w", secretBundle, err)
 	}
+
+	logger.Info("retrieved secrets")
 	return mapSecrets(raw)
 }
 

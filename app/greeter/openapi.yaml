@@ -5,6 +5,144 @@ openapi: 3.0.3
 info:
     title: ""
     version: 0.0.1
-paths: {}
+paths:
+    /greeter/create/{hello}:
+        get:
+            tags:
+                - Greeter
+            operationId: Greeter_CreateGreeter
+            parameters:
+                - name: hello
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/helloworld.v1.CreateGreeterReply'
+    /greeter/{id}:
+        get:
+            tags:
+                - Greeter
+            operationId: Greeter_GetGreeter
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/helloworld.v1.GetGreeterReply'
+    /helloworld/{name}:
+        get:
+            tags:
+                - Greeter
+            operationId: Greeter_SayHello
+            parameters:
+                - name: name
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/helloworld.v1.HelloReply'
+    /v1/orders:
+        post:
+            tags:
+                - Orders
+            operationId: Orders_StartOrder
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/orders.v1.StartOrderRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/orders.v1.StartOrderReply'
+    /v1/orders/{instanceId}:
+        get:
+            tags:
+                - Orders
+            operationId: Orders_GetOrder
+            parameters:
+                - name: instanceId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/orders.v1.GetOrderReply'
 components:
-    schemas: {}
+    schemas:
+        helloworld.v1.CreateGreeterReply:
+            type: object
+            properties:
+                id:
+                    type: string
+                hello:
+                    type: string
+        helloworld.v1.GetGreeterReply:
+            type: object
+            properties:
+                id:
+                    type: string
+                hello:
+                    type: string
+        helloworld.v1.HelloReply:
+            type: object
+            properties:
+                message:
+                    type: string
+        orders.v1.GetOrderReply:
+            type: object
+            properties:
+                instanceId:
+                    type: string
+                runtimeStatus:
+                    type: string
+                    description: RUNNING, COMPLETED, FAILED, TERMINATED, etc.
+                output:
+                    type: string
+        orders.v1.StartOrderReply:
+            type: object
+            properties:
+                instanceId:
+                    type: string
+        orders.v1.StartOrderRequest:
+            type: object
+            properties:
+                itemName:
+                    type: string
+                totalCost:
+                    type: number
+                    format: double
+tags:
+    - name: Greeter
+    - name: Orders
+      description: |-
+        Orders demonstrates Dapr Workflow orchestration: schedule an instance and
+         poll its runtime state.

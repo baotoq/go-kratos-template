@@ -1,0 +1,18 @@
+### Greeter — helloworld example
+### Compatible with VS Code REST Client and JetBrains HTTP Client.
+
+@host = http://localhost:8000
+
+### 1. Say hello (no DB)
+GET {{host}}/helloworld/world
+
+### 2. Create a greeter row (writes to Postgres via ent)
+# @name create
+GET {{host}}/greeter/create/hi-from-rest-client
+
+### 3. Fetch the greeter we just created
+GET {{host}}/greeter/{{create.response.body.id}}
+
+### 4. Fetch a specific greeter by id (paste manually)
+@id = 1
+GET {{host}}/greeter/{{id}}

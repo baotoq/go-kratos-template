@@ -53,7 +53,7 @@ app/greeter/
       ent/                     ← generated ORM code (do not edit by hand)
 ```
 
-**Dependency rule:** `service → biz → data`. `biz` defines repository interfaces; `data` implements them. `biz` never imports `data`. Currently `GreeterRepo` is implemented in `data/greeter.go`; `EventRepo` is declared in `biz/event.go` but has no concrete implementation yet — wire it up via Dapr pubsub when adding event publishing.
+**Dependency rule:** `service → biz → data`. `biz` defines repository interfaces; `data` implements them. `biz` never imports `data`, and (by convention going forward) `data` never imports `biz` either — `data` only provides infra primitives (`*ent.Client`, `*workflow.Client`, etc.). `GreeterRepo` is the legacy pattern (`data/greeter.go` still imports `biz`); the order workflow is the new pattern: `biz` owns the entire workflow lifecycle (registry, worker, schedule, fetch) and `data` exposes only `NewWorkflowClient`.
 
 ### Dependency injection
 
@@ -65,9 +65,10 @@ Config is loaded from `app/greeter/configs/config.yaml` via kratos `config/file`
 
 ### Dapr integration
 
-The app depends on a Dapr sidecar (gRPC on `DAPR_GRPC_PORT`, default `50001`). Two Dapr components are declared in `deploy/k8s/base/infra/dapr/`:
+The app depends on a Dapr sidecar (gRPC on `DAPR_GRPC_PORT`, default `50001`). Three Dapr components are declared in `deploy/k8s/base/infra/dapr/`:
 - `secretstore` — secret injection on startup
-- `pubsub` — event publishing via `EventRepo.Publish`
+- `pubsub` — Redis pub/sub for event publishing
+- `statestore` — Redis state store with `actorStateStore=true`, required for Dapr workflow runtime persistence
 
 ### Database
 
@@ -110,5 +111,6 @@ See `docs/integration-tests.md` for the full pattern.
 
 Topic-specific docs live in `docs/`:
 - `docs/dapr.md` — Dapr setup and component conventions
+- `docs/dapr-workflow.md` — Dapr workflow example (orders) layered across biz/data
 - `docs/ent-go.md` — ent schema authoring and migration workflow
 - `docs/integration-tests.md` — testcontainers patterns
