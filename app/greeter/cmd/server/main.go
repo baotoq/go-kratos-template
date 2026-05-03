@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"time"
 
 	"greeter/app/greeter/internal/conf"
 
@@ -33,16 +32,6 @@ var (
 	id, _ = os.Hostname()
 )
 
-const (
-	daprAttempts        = 12
-	daprAttemptInterval = 5 * time.Second
-	daprCallTimeout     = 5 * time.Second
-	secretStoreName     = "secretstore"
-	secretBundle        = "secrets"
-	secretDBSource      = "DATABASE_CONNECTION_STRING"
-	secretRedisHost     = "REDIS_HOST"
-)
-
 func init() {
 	flag.StringVar(&flagconf, "conf", "../../configs", "config path, eg: -conf config.yaml")
 }
@@ -59,34 +48,6 @@ func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server) *kratos.App {
 			hs,
 		),
 	)
-}
-
-// loadDaprSecrets retries the Dapr secret store until the sidecar is ready.
-// On success, the caller owns the returned client and must Close it.
-func loadDaprSecrets(logger *log.Helper) (dapr.Client, map[string]string, error) {
-	var lastErr error
-	for attempt := 1; attempt <= daprAttempts; attempt++ {
-		client, err := dapr.NewClient()
-		if err != nil {
-			lastErr = err
-		} else {
-			ctx, cancel := context.WithTimeout(context.Background(), daprCallTimeout)
-			s, secErr := client.GetSecret(ctx, secretStoreName, secretBundle, nil)
-			cancel()
-			if secErr == nil {
-				return client, s, nil
-			}
-			client.Close()
-			lastErr = secErr
-		}
-		if attempt == daprAttempts {
-			break
-		}
-		logger.Infof("waiting for dapr sidecar (attempt %d/%d): %v", attempt, daprAttempts, lastErr)
-		time.Sleep(daprAttemptInterval)
-	}
-	return nil, nil, fmt.Errorf("dapr sidecar not ready after %s: %w",
-		time.Duration(daprAttempts)*daprAttemptInterval, lastErr)
 }
 
 func main() {
@@ -113,16 +74,15 @@ func main() {
 		panic(fmt.Errorf("load config: %w", err))
 	}
 
-	daprClient, secret, err := loadDaprSecrets(helper)
+	daprClient, err := dapr.NewClient()
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("dapr client: %w", err))
 	}
 	defer daprClient.Close()
 
-	for _, key := range []string{secretDBSource, secretRedisHost} {
-		if secret[key] == "" {
-			panic(fmt.Errorf("required secret %q is empty in dapr secretstore %q/%q", key, secretStoreName, secretBundle))
-		}
+	secrets, err := conf.LoadSecrets(context.Background(), daprClient, helper)
+	if err != nil {
+		panic(err)
 	}
 
 	var bc conf.Bootstrap
@@ -132,8 +92,8 @@ func main() {
 	if bc.Server == nil || bc.Data == nil {
 		panic("config: server and data sections are required")
 	}
-	bc.Data.Database.Source = secret[secretDBSource]
-	bc.Data.Redis.Addr = secret[secretRedisHost]
+	bc.Data.Database.Source = secrets.DatabaseSource
+	bc.Data.Redis.Addr = secrets.RedisHost
 
 	app, cleanup, err := wireApp(bc.Server, bc.Data, logger)
 	if err != nil {

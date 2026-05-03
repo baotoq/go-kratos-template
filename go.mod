@@ -6,6 +6,7 @@ toolchain go1.26.2
 
 require (
 	entgo.io/ent v0.14.6
+	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/dapr/go-sdk v1.14.2
 	github.com/go-kratos/kratos/v2 v2.9.2
 	github.com/google/wire v0.7.0
@@ -29,7 +30,6 @@ require (
 	github.com/agext/levenshtein v1.2.3 // indirect
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/bmatcuk/doublestar v1.3.4 // indirect
-	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/containerd/errdefs v1.0.0 // indirect
 	github.com/containerd/errdefs/pkg v0.3.0 // indirect
