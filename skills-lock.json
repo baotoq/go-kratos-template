@@ -1,53 +1,11 @@
 {
   "version": 1,
   "skills": {
-    "go-concurrency": {
-      "source": "cxuu/golang-skills",
-      "sourceType": "github",
-      "skillPath": "skills/go-concurrency/SKILL.md",
-      "computedHash": "7896d0efa211420f1df369ff4a1247ccfc7bfd60136dbaf53715ab4221d9cb1e"
-    },
-    "go-error-handling": {
-      "source": "cxuu/golang-skills",
-      "sourceType": "github",
-      "skillPath": "skills/go-error-handling/SKILL.md",
-      "computedHash": "36cf6f9a7d776f49de5f2da2490a25ef1414b13757de708ee175db191863b864"
-    },
-    "go-linting": {
-      "source": "cxuu/golang-skills",
-      "sourceType": "github",
-      "skillPath": "skills/go-linting/SKILL.md",
-      "computedHash": "7e37b54b52eb67b3628849907d22605a6fc55d5d7c5f2f78b1243be9430eb603"
-    },
-    "go-naming": {
-      "source": "cxuu/golang-skills",
-      "sourceType": "github",
-      "skillPath": "skills/go-naming/SKILL.md",
-      "computedHash": "755889ec4a23ee496e26933c1fa444a6a788b005d3622080071ad65a8db65907"
-    },
-    "golang": {
-      "source": "saisudhir14/golang-agent-skill",
-      "sourceType": "github",
-      "skillPath": "SKILL.md",
-      "computedHash": "015c18f1fdacd779cdd5fa2795e3e088ef57f7a0dc7a5ebe9bb67245b29f8800"
-    },
-    "golang-patterns": {
-      "source": "affaan-m/everything-claude-code",
-      "sourceType": "github",
-      "skillPath": "skills/golang-patterns/SKILL.md",
-      "computedHash": "67c25e95cec3f3166c2efefd5f4502863a1246c6f742b8cbcd2e2864d2a8182a"
-    },
     "golang-pro": {
       "source": "jeffallan/claude-skills",
       "sourceType": "github",
       "skillPath": "skills/golang-pro/SKILL.md",
       "computedHash": "12b4cac8f65228f82cbc26f0da9232aba87ffa45ccd01afa3998fb8ec61dc288"
-    },
-    "golang-testing": {
-      "source": "affaan-m/everything-claude-code",
-      "sourceType": "github",
-      "skillPath": "skills/golang-testing/SKILL.md",
-      "computedHash": "db6e910031d9c289f91697cf2397b8a3f717c6fdeae7a115e811a32544d99e11"
     },
     "kratos-skills": {
       "source": "lwx-cloud/kratos-skills",
