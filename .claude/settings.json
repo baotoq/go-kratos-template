@@ -18,7 +18,12 @@
       "Bash(git log:*)",
       "Bash(git diff:*)",
       "Bash(git tag:*)",
-      "Bash(ln:*)"
+      "Bash(ln:*)",
+      "Bash(go get *)",
+      "Bash(go mod *)",
+      "Bash(go build *)",
+      "Bash(go vet *)",
+      "Bash(go test *)"
     ]
   },
   "enabledPlugins": {
