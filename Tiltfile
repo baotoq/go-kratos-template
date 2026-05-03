@@ -2,8 +2,6 @@ load('ext://restart_process', 'docker_build_with_restart')
 load('ext://helm_resource', 'helm_resource', 'helm_repo')
 allow_k8s_contexts(['docker-desktop', 'orbstack'])
 docker_prune_settings(num_builds=1, keep_recent=1)
-# Disable secret scrubbing in logs: dev-only, and false positives (e.g. postgres
-# username 'greeter' matches the image name) make build output unreadable.
 secret_settings(disable_scrub=True)
 # Tilt doesn't auto-detect OrbStack as a local cluster (and the rewritten
 # kubeconfig URL inside the devcontainer hides the localhost hint), so it tries
@@ -23,9 +21,9 @@ dlv_flags = '--headless --listen=:7000 --accept-multiclient --only-same-user=fal
 if dlv_continue:
     dlv_flags += ' --continue'
 
-entrypoint = ['sh', '-c', 'exec dlv exec /app/greeter ' + dlv_flags + ' -- -conf /data/conf']
+entrypoint = ['sh', '-c', 'exec dlv exec /app/coffee ' + dlv_flags + ' -- -conf /data/conf']
 
-compile_cmd = 'mkdir -p dist && GOOS=linux GOARCH=$(go env GOHOSTARCH) CGO_ENABLED=0 go build -gcflags="all=-N -l" -ldflags "-X main.Name=greeter -X main.Version=dev" -o ./dist/greeter ./app/greeter/cmd/server'
+compile_cmd = 'mkdir -p dist && GOOS=linux GOARCH=$(go env GOHOSTARCH) CGO_ENABLED=0 go build -gcflags="all=-N -l" -ldflags "-X main.Name=coffee -X main.Version=dev" -o ./dist/coffee ./app/coffee/cmd/server'
 
 # Compile locally on every Go source change.
 # Result is synced into the running container — no full image rebuild needed.
@@ -35,7 +33,7 @@ local_resource('compile',
     labels=['build'],
 )
 
-# Helm chart tarballs for postgres/redis. helm() below is evaluated at
+# Helm chart tarball for redis. helm() below is evaluated at
 # Tiltfile load time, so this fetch must run synchronously here — a
 # local_resource would fire too late to affect the current load.
 local('[ -d deploy/helm/charts ] || helm dependency update deploy/helm', quiet=True)
@@ -67,44 +65,43 @@ helm_resource(
     labels=['infra'],
 )
 
-# Tilt-optimised Dockerfile contains no Go toolchain — it just copies ./dist/greeter.
+# Tilt-optimised Dockerfile contains no Go toolchain — it just copies ./dist/coffee.
 # only=['./dist'] means docker_build watches *only* that dir, so Go source
 # changes never trigger an image rebuild; they go through compile → sync instead.
 docker_build_with_restart(
-    'greeter',
+    'coffee',
     '.',
     entrypoint=entrypoint,
-    dockerfile='app/greeter/Dockerfile.dev.debug',
+    dockerfile='app/coffee/Dockerfile.dev.debug',
     only=['./dist'],
     live_update=[
-        sync('./dist/greeter', '/app/greeter'),
+        sync('./dist/coffee', '/app/coffee'),
     ],
 )
 
 k8s_yaml(helm(
     'deploy/helm',
     name='deps',
-    namespace='greeter',
+    namespace='coffee',
     values=['deploy/helm/values.yaml'],
 ))
 k8s_yaml(kustomize('deploy/k8s/overlays/debug', flags=['--load-restrictor=LoadRestrictionsNone']))
 
-k8s_resource('postgres', port_forwards=['5432:5432'], labels=['infra'])
-k8s_resource('redis',    port_forwards=['6379:6379'], labels=['infra'])
-k8s_resource('pgadmin',  port_forwards=['5050:80'],   labels=['infra'], resource_deps=['postgres'])
+k8s_resource('redis', port_forwards=['6379:6379'], labels=['infra'])
 
 k8s_resource(
     objects=[
-        'pubsub:Component:greeter',
-        'secretstore:Component:greeter',
+        'pubsub:Component:coffee',
+        'secretstore:Component:coffee',
+        'statestore:Component:coffee',
     ],
     new_name='dapr-components',
     resource_deps=['dapr'],
     labels=['infra'],
 )
 
-k8s_resource('greeter',
+k8s_resource('coffee',
     port_forwards=['8000:8000', '9000:9000', '7000:7000'],
-    resource_deps=['postgres', 'redis', 'compile', 'dapr', 'dapr-components'],
+    resource_deps=['redis', 'compile', 'dapr', 'dapr-components'],
     labels=['app'],
 )

@@ -10,10 +10,6 @@ bin/
 Tiltfile
 .claude/
 
-# Dev Dockerfiles (not needed inside build context)
-app/greeter/Dockerfile.dev
-app/greeter/Dockerfile.dev.debug
-
 # K8s / deploy configs
 deploy/
 

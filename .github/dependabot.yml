@@ -12,7 +12,7 @@ updates:
           - patch
 
   - package-ecosystem: docker
-    directory: /app/greeter
+    directory: /app/coffee
     schedule:
       interval: weekly
     open-pull-requests-limit: 5

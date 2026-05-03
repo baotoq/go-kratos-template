@@ -246,7 +246,7 @@ s.Start()
 
 ```bash
 dapr init            # pulls daprd, Redis, Zipkin containers
-dapr run --app-id myapp --app-port 8000 --dapr-http-port 3500 -- ./bin/greeter -conf ./configs
+dapr run --app-id myapp --app-port 8000 --dapr-http-port 3500 -- ./bin/coffee -conf ./configs
 dapr dashboard       # opens http://localhost:8080
 dapr stop --app-id myapp
 ```
@@ -264,7 +264,7 @@ Add sidecar annotations to any Deployment pod template:
 ```yaml
 annotations:
   dapr.io/enabled: "true"
-  dapr.io/app-id: "greeter"
+  dapr.io/app-id: "coffee"
   dapr.io/app-port: "8000"          # HTTP
   dapr.io/app-protocol: "grpc"      # set for gRPC apps
   dapr.io/config: "appconfig"       # reference a Configuration resource
@@ -289,18 +289,15 @@ annotations:
 
 **Namespace isolation** — Add `dapr.io/sidecar-namespace: <ns>` annotation. Cross-namespace invocation: `appId.namespace` format.
 
-## Repo fit — greeter
+## Repo fit — coffee
 
-Current stack: go-kratos v2 layered monolith, Wire DI, no Dapr yet.
+Current stack: go-kratos v2 layered monolith, Wire DI, Dapr sidecar wired for secrets, pub/sub, and durable workflow state.
 
-| Dapr block | Where to wire in |
-|-----------|-----------------|
-| State (Redis) | `internal/data/data.go` — replace direct Redis client with `dapr.NewClient().SaveState/GetState`. Remove `conf.Data.Redis` if Dapr manages the connection. |
-| Pub/sub | `internal/data/` — new repo for event publishing; `internal/server/` — add a second port for Dapr subscription callbacks |
-| Service invocation | `internal/server/` — `NewHTTPServer` already on `:8000`; just add `dapr.io/app-port: "8000"` annotation |
-| Secrets | `internal/conf/` — fetch secrets from Dapr on startup instead of plain config.yaml values |
-| Workflow | `internal/biz/` — saga-style multi-step logic (e.g., recursive-buy flow) |
+| Dapr block | Where it lives |
+|-----------|----------------|
+| Secrets | `app/coffee/internal/conf/secrets.go` fetches the bundle on startup; struct tags name required keys. |
+| Workflow (state-backed) | `app/coffee/internal/biz/coffee.go` registers the workflow + activities and runs the worker; `app/coffee/internal/data/workflow.go` exposes the `*workflow.Client` factory over the Dapr sidecar gRPC conn. |
+| Pub/sub | Component declared in `deploy/k8s/base/infra/dapr/pubsub.yaml`; Go publishers can be added under `internal/data/` and subscribers via a second port in `internal/server/`. |
+| Service invocation | `dapr.io/app-id: coffee` annotation on the deployment; the kratos HTTP server already exposes `:8000`. |
 
-K8s: `deploy/k8s/base/greeter.yaml` pod template needs the 4 `dapr.io/*` annotations. Add component YAMLs (statestore, pubsub) alongside in `deploy/k8s/base/`. No new overlay needed for basic sidecar injection.
-
-Wire: add `dapr.NewClient()` as a constructor in `internal/data/data.go`, wire it into `data.ProviderSet`, inject into repo constructors that need state/pubsub access.
+K8s: `deploy/k8s/base/app/coffee.yaml` carries the `dapr.io/*` annotations. Component YAMLs live in `deploy/k8s/base/infra/dapr/` (`secretstore`, `pubsub`, `statestore`).

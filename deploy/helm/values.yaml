@@ -1,21 +1,3 @@
-postgres:
-  fullnameOverride: postgres
-  auth:
-    username: greeter
-    password: greeter
-    database: greeter
-  primary:
-    persistence:
-      enabled: false
-    resources:
-      requests:
-        cpu: 50m
-        memory: 96Mi
-      limits:
-        memory: 192Mi
-  metrics:
-    enabled: false
-
 redis:
   fullnameOverride: redis
   architecture: standalone

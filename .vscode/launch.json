@@ -2,7 +2,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Attach to greeter in k8s",
+      "name": "Attach to coffee in k8s",
       "type": "go",
       "request": "attach",
       "mode": "remote",
