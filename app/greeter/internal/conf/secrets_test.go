@@ -53,16 +53,16 @@ func withFastWait(t *testing.T, timeout time.Duration) {
 func TestLoadSecrets_Success(t *testing.T) {
 	// Arrange
 	withFastWait(t, time.Millisecond)
-	values := map[string]string{
-		keyDBSource:  "postgres://user:pass@host/db",
-		keyRedisHost: "redis:6379",
-	}
+	var calls int
 	store := &fakeStore{
 		getSecret: func(_ context.Context, storeName, key string, _ map[string]string) (map[string]string, error) {
+			calls++
 			assert.Equal(t, secretStoreName, storeName)
-			v, ok := values[key]
-			require.Truef(t, ok, "unexpected key %q", key)
-			return map[string]string{key: v}, nil
+			assert.Equal(t, secretBundle, key)
+			return map[string]string{
+				keyDBSource:  "postgres://user:pass@host/db",
+				keyRedisHost: "redis:6379",
+			}, nil
 		},
 	}
 
@@ -71,6 +71,7 @@ func TestLoadSecrets_Success(t *testing.T) {
 
 	// Assert
 	require.NoError(t, err)
+	assert.Equal(t, 1, calls, "expected exactly one GetSecret call")
 	assert.Equal(t, &Secrets{
 		DatabaseSource: "postgres://user:pass@host/db",
 		RedisHost:      "redis:6379",
@@ -80,22 +81,22 @@ func TestLoadSecrets_Success(t *testing.T) {
 func TestLoadSecrets_MissingRequiredField(t *testing.T) {
 	cases := []struct {
 		name   string
-		values map[string]string
+		bundle map[string]string
 		empty  string
 	}{
 		{
 			name:   "missing database source",
-			values: map[string]string{keyRedisHost: "redis:6379"},
+			bundle: map[string]string{keyRedisHost: "redis:6379"},
 			empty:  keyDBSource,
 		},
 		{
 			name:   "missing redis host",
-			values: map[string]string{keyDBSource: "postgres://x"},
+			bundle: map[string]string{keyDBSource: "postgres://x"},
 			empty:  keyRedisHost,
 		},
 		{
 			name: "empty database source",
-			values: map[string]string{
+			bundle: map[string]string{
 				keyDBSource:  "",
 				keyRedisHost: "redis:6379",
 			},
@@ -108,8 +109,8 @@ func TestLoadSecrets_MissingRequiredField(t *testing.T) {
 			// Arrange
 			withFastWait(t, time.Millisecond)
 			store := &fakeStore{
-				getSecret: func(_ context.Context, _, key string, _ map[string]string) (map[string]string, error) {
-					return map[string]string{key: tc.values[key]}, nil
+				getSecret: func(context.Context, string, string, map[string]string) (map[string]string, error) {
+					return tc.bundle, nil
 				},
 			}
 

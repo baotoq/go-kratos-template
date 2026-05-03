@@ -18,6 +18,7 @@ type SecretStore interface {
 
 const (
 	secretStoreName = "secretstore"
+	secretBundle    = "secrets"
 	secretTagKey    = "secret"
 )
 
@@ -32,28 +33,24 @@ type Secrets struct {
 	RedisHost      string `secret:"REDIS_HOST"`
 }
 
-// LoadSecrets blocks until the sidecar reports ready, then fetches each tagged
-// secret with one GetSecret call per key and verifies the value is non-empty.
-// The caller owns the store lifecycle.
+// LoadSecrets blocks until the sidecar reports ready, then fetches the secret
+// bundle in one GetSecret call and maps it onto a Secrets struct, verifying
+// every tagged field is non-empty. The caller owns the store lifecycle.
 func LoadSecrets(ctx context.Context, store SecretStore, logger *log.Helper) (*Secrets, error) {
 	logger.Info("waiting for secret store sidecar")
 	if err := store.Wait(ctx, secretWaitTimeout); err != nil {
 		return nil, fmt.Errorf("secret store not ready after %s: %w", secretWaitTimeout, err)
 	}
-	return mapSecrets(func(key string) (string, error) {
-		result, err := store.GetSecret(ctx, secretStoreName, key, nil)
-		if err != nil {
-			return "", err
-		}
-		return result[key], nil
-	})
+	raw, err := store.GetSecret(ctx, secretStoreName, secretBundle, nil)
+	if err != nil {
+		return nil, fmt.Errorf("get secret bundle %q: %w", secretBundle, err)
+	}
+	return mapSecrets(raw)
 }
 
-// mapSecrets walks the Secrets struct and fills each tagged field by calling
-// fetch(key). It returns an error if any tagged field's value is empty or if
-// fetch fails. Decoupling this from the store means the reflection + validation
-// rules live in one place and stay trivially testable.
-func mapSecrets(fetch func(key string) (string, error)) (*Secrets, error) {
+// mapSecrets walks the Secrets struct and copies each tagged field's value out
+// of raw. It returns an error if any tagged field is missing or empty.
+func mapSecrets(raw map[string]string) (*Secrets, error) {
 	var s Secrets
 	v := reflect.ValueOf(&s).Elem()
 	t := v.Type()
@@ -62,12 +59,10 @@ func mapSecrets(fetch func(key string) (string, error)) (*Secrets, error) {
 		if !ok {
 			continue
 		}
-		value, err := fetch(key)
-		if err != nil {
-			return nil, fmt.Errorf("get secret %q: %w", key, err)
-		}
+		value := raw[key]
 		if value == "" {
-			return nil, fmt.Errorf("required secret %q is empty in store %q", key, secretStoreName)
+			return nil, fmt.Errorf("required secret %q is empty in store %q bundle %q",
+				key, secretStoreName, secretBundle)
 		}
 		v.Field(i).SetString(value)
 	}
