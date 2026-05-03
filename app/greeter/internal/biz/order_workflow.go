@@ -4,10 +4,15 @@ import (
 	"fmt"
 
 	"github.com/dapr/durabletask-go/workflow"
+	"github.com/go-kratos/kratos/v2/log"
 )
 
 // OrderWorkflowName is also the name used to schedule new instances.
 const OrderWorkflowName = "OrderProcessingWorkflow"
+
+// activityLog is set once by NewOrderUsecase so activity functions (which the
+// workflow registers by reflected name) can log without taking a receiver.
+var activityLog = log.NewHelper(log.DefaultLogger)
 
 // OrderProcessingWorkflow is a minimal sequential orchestration:
 // notify → process payment → notify. Mirrors the pattern in
@@ -46,6 +51,7 @@ func NotifyActivity(ctx workflow.ActivityContext) (any, error) {
 	if err := ctx.GetInput(&msg); err != nil {
 		return nil, err
 	}
+	activityLog.Infow("activity", "Notify", "msg", msg)
 	return msg, nil
 }
 
@@ -56,5 +62,7 @@ func ProcessPaymentActivity(ctx workflow.ActivityContext) (any, error) {
 	if err := ctx.GetInput(&order); err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("receipt-%s", order.ItemName), nil
+	receipt := fmt.Sprintf("receipt-%s", order.ItemName)
+	activityLog.Infow("activity", "ProcessPayment", "item", order.ItemName, "total", order.TotalCost, "receipt", receipt)
+	return receipt, nil
 }

@@ -8,7 +8,8 @@
       "mode": "remote",
       "debugAdapter": "dlv-dap",
       "host": "127.0.0.1",
-      "port": 7000
+      "port": 7000,
+      "hideSystemGoroutines": true
     }
   ]
 }

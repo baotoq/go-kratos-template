@@ -16,8 +16,8 @@ Content-Type: application/json
 }
 
 ### 2. Poll the workflow status (uses the id from request #1)
-GET {{host}}/v1/orders/{{start.response.body.instance_id}}
+GET {{host}}/v1/orders/{{start.response.body.instanceId}}
 
 ### 3. Poll a specific instance by id (paste manually if needed)
-@instance_id = paste-id-here
-GET {{host}}/v1/orders/{{instance_id}}
+@instanceId = paste-id-here
+GET {{host}}/v1/orders/{{instanceId}}

@@ -38,6 +38,7 @@ type OrderUsecase struct {
 // func cancels the worker context on shutdown.
 func NewOrderUsecase(c *workflow.Client, logger log.Logger) (*OrderUsecase, func(), error) {
 	helper := log.NewHelper(logger)
+	activityLog = helper
 	registry := workflow.NewRegistry()
 	if err := registry.AddWorkflowN(OrderWorkflowName, OrderProcessingWorkflow); err != nil {
 		return nil, nil, fmt.Errorf("register workflow: %w", err)
