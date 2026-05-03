@@ -1,8 +1,8 @@
 package server
 
 import (
+	coffeev1 "greeter/api/greeter/coffee/v1"
 	v1 "greeter/api/greeter/helloworld/v1"
-	ordersv1 "greeter/api/greeter/orders/v1"
 	"greeter/app/greeter/internal/conf"
 	"greeter/app/greeter/internal/service"
 
@@ -16,7 +16,7 @@ import (
 // NewGRPCServer new a gRPC server.
 // Note: kratos transport/grpc registers grpc.health.v1.Health by default —
 // no explicit registration needed.
-func NewGRPCServer(c *conf.Server, greeter *service.GreeterService, orders *service.OrdersService, logger log.Logger) *grpc.Server {
+func NewGRPCServer(c *conf.Server, greeter *service.GreeterService, coffee *service.CoffeeService, logger log.Logger) *grpc.Server {
 	var opts = []grpc.ServerOption{
 		grpc.Middleware(
 			recovery.Recovery(),
@@ -35,6 +35,6 @@ func NewGRPCServer(c *conf.Server, greeter *service.GreeterService, orders *serv
 	}
 	srv := grpc.NewServer(opts...)
 	v1.RegisterGreeterServer(srv, greeter)
-	ordersv1.RegisterOrdersServer(srv, orders)
+	coffeev1.RegisterCoffeeServer(srv, coffee)
 	return srv
 }

@@ -33,14 +33,14 @@ func wireApp(confServer *conf.Server, confData *conf.Data, clientClient client.C
 	greeterUsecase := biz.NewGreeterUsecase(greeterRepo)
 	greeterService := service.NewGreeterService(greeterUsecase)
 	workflowClient := data.NewWorkflowClient(clientClient)
-	orderUsecase, cleanup2, err := biz.NewOrderUsecase(workflowClient, logger)
+	coffeeUsecase, cleanup2, err := biz.NewCoffeeUsecase(workflowClient)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
-	ordersService := service.NewOrdersService(orderUsecase)
-	grpcServer := server.NewGRPCServer(confServer, greeterService, ordersService, logger)
-	httpServer := server.NewHTTPServer(confServer, greeterService, ordersService, logger)
+	coffeeService := service.NewCoffeeService(coffeeUsecase)
+	grpcServer := server.NewGRPCServer(confServer, greeterService, coffeeService, logger)
+	httpServer := server.NewHTTPServer(confServer, greeterService, coffeeService, logger)
 	app := newApp(logger, grpcServer, httpServer)
 	return app, func() {
 		cleanup2()

@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package coffee.v1;
+
+import "google/api/annotations.proto";
+
+option go_package = "greeter/api/greeter/coffee/v1;v1";
+option java_multiple_files = true;
+option java_package = "dev.kratos.api.coffee.v1";
+option java_outer_classname = "CoffeeProtoV1";
+
+// Coffee is a tiny Dapr Workflow demo: brew a cup, then check on it.
+service Coffee {
+  // Start brewing a cup. Returns an instance_id you can poll.
+  rpc Brew (BrewRequest) returns (BrewReply) {
+    option (google.api.http) = {
+      post: "/v1/coffee"
+      body: "*"
+    };
+  }
+
+  // Check on a brewing cup by instance_id.
+  rpc Check (CheckRequest) returns (CheckReply) {
+    option (google.api.http) = {
+      get: "/v1/coffee/{instance_id}"
+    };
+  }
+}
+
+message BrewRequest {
+  string beans = 1; // e.g. "arabica"
+  string size  = 2; // "small", "medium", "large"
+}
+
+message BrewReply {
+  string instance_id = 1;
+}
+
+message CheckRequest {
+  string instance_id = 1;
+}
+
+message CheckReply {
+  string instance_id = 1;
+  // RUNNING, COMPLETED, FAILED, etc.
+  string status = 2;
+  // Final coffee description once status == COMPLETED.
+  string cup    = 3;
+}

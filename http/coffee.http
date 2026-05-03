@@ -1,0 +1,22 @@
+### Coffee — Dapr Workflow demo
+### Compatible with VS Code REST Client and JetBrains HTTP Client.
+### Run `make dev` first; the HTTP server listens on :8000 (Tilt port-forward).
+
+@host = http://localhost:8000
+
+### 1. Brew a cup
+# @name brew
+POST {{host}}/v1/coffee
+Content-Type: application/json
+
+{
+  "beans": "arabica",
+  "size":  "large"
+}
+
+### 2. Peek at the running workflow (uses the id from request #1)
+GET {{host}}/v1/coffee/{{brew.response.body.instanceId}}
+
+### 3. Peek by id (paste manually if needed)
+@instance_id = paste-id-here
+GET {{host}}/v1/coffee/{{instance_id}}

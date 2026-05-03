@@ -60,16 +60,17 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/helloworld.v1.HelloReply'
-    /v1/orders:
+    /v1/coffee:
         post:
             tags:
-                - Orders
-            operationId: Orders_StartOrder
+                - Coffee
+            description: Start brewing a cup. Returns an instance_id you can poll.
+            operationId: Coffee_Brew
             requestBody:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/orders.v1.StartOrderRequest'
+                            $ref: '#/components/schemas/coffee.v1.BrewRequest'
                 required: true
             responses:
                 "200":
@@ -77,12 +78,13 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/orders.v1.StartOrderReply'
-    /v1/orders/{instanceId}:
+                                $ref: '#/components/schemas/coffee.v1.BrewReply'
+    /v1/coffee/{instanceId}:
         get:
             tags:
-                - Orders
-            operationId: Orders_GetOrder
+                - Coffee
+            description: Check on a brewing cup by instance_id.
+            operationId: Coffee_Check
             parameters:
                 - name: instanceId
                   in: path
@@ -95,9 +97,32 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/orders.v1.GetOrderReply'
+                                $ref: '#/components/schemas/coffee.v1.CheckReply'
 components:
     schemas:
+        coffee.v1.BrewReply:
+            type: object
+            properties:
+                instanceId:
+                    type: string
+        coffee.v1.BrewRequest:
+            type: object
+            properties:
+                beans:
+                    type: string
+                size:
+                    type: string
+        coffee.v1.CheckReply:
+            type: object
+            properties:
+                instanceId:
+                    type: string
+                status:
+                    type: string
+                    description: RUNNING, COMPLETED, FAILED, etc.
+                cup:
+                    type: string
+                    description: Final coffee description once status == COMPLETED.
         helloworld.v1.CreateGreeterReply:
             type: object
             properties:
@@ -117,32 +142,7 @@ components:
             properties:
                 message:
                     type: string
-        orders.v1.GetOrderReply:
-            type: object
-            properties:
-                instanceId:
-                    type: string
-                runtimeStatus:
-                    type: string
-                    description: RUNNING, COMPLETED, FAILED, TERMINATED, etc.
-                output:
-                    type: string
-        orders.v1.StartOrderReply:
-            type: object
-            properties:
-                instanceId:
-                    type: string
-        orders.v1.StartOrderRequest:
-            type: object
-            properties:
-                itemName:
-                    type: string
-                totalCost:
-                    type: number
-                    format: double
 tags:
+    - name: Coffee
+      description: 'Coffee is a tiny Dapr Workflow demo: brew a cup, then check on it.'
     - name: Greeter
-    - name: Orders
-      description: |-
-        Orders demonstrates Dapr Workflow orchestration: schedule an instance and
-         poll its runtime state.

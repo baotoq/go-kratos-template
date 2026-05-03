@@ -53,7 +53,7 @@ app/greeter/
       ent/                     ← generated ORM code (do not edit by hand)
 ```
 
-**Dependency rule:** `service → biz → data`. `biz` defines repository interfaces; `data` implements them. `biz` never imports `data`, and (by convention going forward) `data` never imports `biz` either — `data` only provides infra primitives (`*ent.Client`, `*workflow.Client`, etc.). `GreeterRepo` is the legacy pattern (`data/greeter.go` still imports `biz`); the order workflow is the new pattern: `biz` owns the entire workflow lifecycle (registry, worker, schedule, fetch) and `data` exposes only `NewWorkflowClient`.
+**Dependency rule:** `service → biz → data`. `biz` defines repository interfaces; `data` implements them. `biz` never imports `data`, and (by convention going forward) `data` never imports `biz` either — `data` only provides infra primitives (`*ent.Client`, `*workflow.Client`, etc.). `GreeterRepo` is the legacy pattern (`data/greeter.go` still imports `biz`); the coffee workflow is the new pattern: `biz` owns the entire workflow lifecycle (registry, worker, schedule, fetch) and `data` exposes only `NewWorkflowClient`.
 
 ### Dependency injection
 
@@ -111,6 +111,6 @@ See `docs/integration-tests.md` for the full pattern.
 
 Topic-specific docs live in `docs/`:
 - `docs/dapr.md` — Dapr setup and component conventions
-- `docs/dapr-workflow.md` — Dapr workflow example (orders) layered across biz/data
+- `docs/dapr-workflow.md` — Dapr workflow example (coffee) layered across biz/data
 - `docs/ent-go.md` — ent schema authoring and migration workflow
 - `docs/integration-tests.md` — testcontainers patterns

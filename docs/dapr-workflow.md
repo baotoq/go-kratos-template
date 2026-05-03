@@ -1,135 +1,72 @@
-# Dapr Workflow
+# Dapr Workflow — Coffee example
 
-Minimal Dapr Workflow example adapted from the [Dapr workflow quickstart](https://docs.dapr.io/getting-started/quickstarts/workflow-quickstart/). The greeter app exposes a tiny `OrderProcessing` workflow:
+A toddler-simple example of a [Dapr Workflow](https://docs.dapr.io/getting-started/quickstarts/workflow-quickstart/):
 
 ```
-notify ("Received …") → process payment → notify ("Fulfilled …")
+brew(beans, size)
+   └─ step 1: GrindBeansActivity(beans)        → "ground arabica"
+   └─ step 2: BrewActivity(grounds, size)      → "a large cup of ground arabica coffee"
 ```
 
-## Layout
+Why this matters: each step is *durable*. If the pod dies between step 1 and step 2, Dapr replays the workflow from the persisted history and resumes from where it left off.
+
+## Files
 
 | File | Purpose |
 | --- | --- |
-| `api/greeter/orders/v1/orders.proto` | gRPC + HTTP contract: `StartOrder`, `GetOrder` |
-| `app/greeter/internal/biz/order.go` | `Order` / `OrderStatus` types, `OrderUsecase` (registers workflow, runs worker, schedules, fetches metadata) |
-| `app/greeter/internal/biz/order_workflow.go` | Workflow + activity functions |
-| `app/greeter/internal/data/workflow.go` | `*workflow.Client` factory — the only infra primitive `data` exposes for orders |
-| `app/greeter/internal/service/order.go` | gRPC/HTTP service implementation |
-| `deploy/k8s/base/infra/dapr/statestore.yaml` | Redis state store (`actorStateStore=true`), required for workflow persistence |
-
-`data` does not import `biz` for the order workflow: it only provides the `*workflow.Client` primitive. All workflow-specific code lives in `biz`.
-
-## How a request flows
-
-### Startup
-
-`main.go` opens a single Dapr sidecar gRPC connection. Wire builds the graph: `dapr.Client → *workflow.Client → OrderUsecase`. `NewOrderUsecase` registers the workflow + activities, then calls `client.StartWorker(ctx, registry)` so this same process is also the worker that executes scheduled instances. The wire-generated cleanup func cancels the worker context on shutdown.
-
-```
-                 (data/workflow.go)        (biz/order.go)
-                 ┌──────────────────┐      ┌────────────────┐
- dapr.Client ──► │ workflow.NewClient│ ──► │ NewOrderUsecase│
-                 └──────────────────┘      └───────┬────────┘
-                                                   │ AddWorkflowN
-                                                   │ AddActivity   ┌──────────────┐
-                                                   └─StartWorker──►│ Dapr sidecar │
-                                                                   └──────────────┘
-```
-
-### POST /v1/orders — schedule
-
-```
- Client    OrdersService          OrderUsecase           workflow.Client    Dapr sidecar    Redis
-   │            │                      │                       │                │            │
-   │ POST /v1/orders                   │                       │                │            │
-   │  {item_name,total_cost}           │                       │                │            │
-   │───────────►│                      │                       │                │            │
-   │            │ Start(ctx, &Order)   │                       │                │            │
-   │            │─────────────────────►│                       │                │            │
-   │            │                      │ ScheduleWorkflow      │                │            │
-   │            │                      │  ("OrderProcessing…", │                │            │
-   │            │                      │   WithInput(order))   │                │            │
-   │            │                      │──────────────────────►│                │            │
-   │            │                      │                       │ ScheduleNew…   │            │
-   │            │                      │                       │───────────────►│ persist    │
-   │            │                      │                       │                │───────────►│
-   │            │                      │                       │   instance_id  │            │
-   │            │                      │                       │◄───────────────│            │
-   │            │                      │     instance_id       │                │            │
-   │            │                      │◄──────────────────────│                │            │
-   │            │     instance_id      │                       │                │            │
-   │            │◄─────────────────────│                       │                │            │
-   │ 200 {"instance_id":"..."}         │                       │                │            │
-   │◄───────────│                      │                       │                │            │
-```
-
-### Worker — execute
-
-The worker (same process) picks the new instance up from the sidecar and runs `OrderProcessingWorkflow`. Each `CallActivity(...).Await(...)` is a *durable* yield: the workflow function returns, the sidecar persists the pending step, then later replays the workflow with the activity result fed in.
-
-```
-   ┌───────────────────────────┐
-   │  schedule received        │
-   └─────────────┬─────────────┘
-                 ▼
-   GetInput → Order{ItemName, TotalCost}
-                 │
-                 ▼
-   NotifyActivity("Received car ($15000.00)")
-                 │
-                 ▼
-   ProcessPaymentActivity(order) ──► returns "receipt-car"
-                 │
-                 ▼
-   NotifyActivity("Fulfilled car (receipt-car)")
-                 │
-                 ▼
-   return "receipt-car"   →   runtime_status=COMPLETED, output="receipt-car"
-```
-
-Between every activity call, runtime state (history events, pending tasks, output) is checkpointed to the `statestore` Redis component — that is why the component must have `actorStateStore: "true"`.
-
-### GET /v1/orders/{id} — poll status
-
-```
- Client    OrdersService          OrderUsecase           workflow.Client    Dapr sidecar
-   │            │                      │                       │                │
-   │ GET /v1/orders/{id}               │                       │                │
-   │───────────►│                      │                       │                │
-   │            │ Get(ctx, id)         │                       │                │
-   │            │─────────────────────►│                       │                │
-   │            │                      │ FetchWorkflowMetadata │                │
-   │            │                      │  (id, WithFetchPayloads)              │
-   │            │                      │──────────────────────►│                │
-   │            │                      │                       │ GetInstance    │
-   │            │                      │                       │───────────────►│
-   │            │                      │                       │ OrchestrationMetadata
-   │            │                      │                       │◄───────────────│
-   │            │                      │ *WorkflowMetadata     │                │
-   │            │                      │◄──────────────────────│                │
-   │            │ &OrderStatus{...}    │                       │                │
-   │            │◄─────────────────────│                       │                │
-   │ 200 {"instance_id":"...","runtime_status":"COMPLETED","output":"\"receipt-car\""}
-   │◄───────────│                      │                       │                │
-```
-
-If the sidecar returns `api.ErrInstanceNotFound`, `Get` translates it to `biz.ErrOrderNotFound` (a kratos `NotFound` error), which the HTTP transport renders as `404`.
+| `api/greeter/coffee/v1/coffee.proto` | gRPC + HTTP contract: `Brew`, `Check` |
+| `app/greeter/internal/biz/coffee.go` | `CoffeeOrder`/`CoffeeStatus` types, `CoffeeUsecase` (registers workflow + activities, runs the worker, exposes `Brew`/`Check`) |
+| `app/greeter/internal/biz/coffee_workflow.go` | The two-step workflow + the two activity functions |
+| `app/greeter/internal/data/workflow.go` | Just the `*workflow.Client` factory (one-line wrapper around the existing Dapr sidecar conn) |
+| `app/greeter/internal/service/coffee.go` | gRPC/HTTP service implementation |
+| `deploy/k8s/base/infra/dapr/statestore.yaml` | Redis state store with `actorStateStore=true` — required so Dapr can persist workflow state |
+| `http/coffee.http` | REST Client / JetBrains HTTP requests to drive the demo |
 
 ## Try it
 
 ```bash
-make dev
+make dev   # tilt up
 
-curl -X POST http://localhost:8000/v1/orders \
+# 1. Start brewing
+curl -X POST http://localhost:8000/v1/coffee \
      -H 'Content-Type: application/json' \
-     -d '{"item_name":"car","total_cost":15000.0}'
-# => {"instance_id":"..."}
+     -d '{"beans":"arabica","size":"large"}'
+# => {"instanceId":"..."}
 
-curl http://localhost:8000/v1/orders/<instance_id>
-# => {"instance_id":"...","runtime_status":"COMPLETED","output":"\"receipt-car\""}
+# 2. Peek at the cup
+curl http://localhost:8000/v1/coffee/<instance_id>
+# => {"instanceId":"...","status":"COMPLETED","cup":"\"a large cup of ground arabica coffee\""}
 ```
 
-## Extending
+## Layering
 
-- Add an external-event step with `ctx.WaitForExternalEvent("approval", timeout)` (see the order-processor sample for the high-value-order pattern).
-- Replace `ProcessPaymentActivity` with a real `dapr.Client.SaveState` call against the configured state store.
+The workflow lives in `biz` (it is business logic). `data` only provides the `*workflow.Client` primitive — it never imports `biz`. The dependency direction is:
+
+```
+service → biz → workflow.Client (provided by data)
+                     │
+                     ▼
+                 Dapr sidecar (gRPC) → Redis statestore
+```
+
+## Adding more steps
+
+Pattern for a new activity:
+
+```go
+// 1. Add the activity in biz/coffee_workflow.go
+func PourActivity(actx workflow.ActivityContext) (any, error) {
+    var cup string
+    if err := actx.GetInput(&cup); err != nil { return nil, err }
+    return cup + " in a paper cup", nil
+}
+
+// 2. Register it in NewCoffeeUsecase (biz/coffee.go) — add to the slice:
+for _, a := range []workflow.Activity{GrindBeansActivity, BrewActivity, PourActivity} { ... }
+
+// 3. Call it from MakeCoffeeWorkflow:
+var poured string
+if err := ctx.CallActivity(PourActivity, workflow.WithActivityInput(cup)).Await(&poured); err != nil {
+    return nil, err
+}
+```
