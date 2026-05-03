@@ -25,7 +25,7 @@ if dlv_continue:
 
 entrypoint = ['sh', '-c', 'exec dlv exec /app/greeter ' + dlv_flags + ' -- -conf /data/conf']
 
-compile_cmd = 'mkdir -p dist && GOOS=linux GOARCH=$(go env GOHOSTARCH) CGO_ENABLED=0 go build -gcflags="all=-N -l" -ldflags "-X main.Version=dev" -o ./dist/greeter ./app/greeter/cmd/server'
+compile_cmd = 'mkdir -p dist && GOOS=linux GOARCH=$(go env GOHOSTARCH) CGO_ENABLED=0 go build -gcflags="all=-N -l" -ldflags "-X main.Name=greeter -X main.Version=dev" -o ./dist/greeter ./app/greeter/cmd/server'
 
 # Compile locally on every Go source change.
 # Result is synced into the running container — no full image rebuild needed.

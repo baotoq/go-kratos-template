@@ -50,7 +50,7 @@ api:
 .PHONY: build
 # build
 build:
-	mkdir -p bin/ && go build -ldflags "-X main.Version=$(VERSION)" -o ./bin/greeter ./app/greeter/cmd/server
+	mkdir -p bin/ && go build -ldflags "-X main.Name=greeter -X main.Version=$(VERSION)" -o ./bin/greeter ./app/greeter/cmd/server
 
 .PHONY: test
 # test (requires Docker — testcontainers-go integration tests run alongside units)

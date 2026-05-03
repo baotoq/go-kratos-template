@@ -16,6 +16,9 @@ import (
 	"github.com/go-kratos/kratos/v2/middleware/tracing"
 	"github.com/go-kratos/kratos/v2/transport/grpc"
 	"github.com/go-kratos/kratos/v2/transport/http"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
 	_ "go.uber.org/automaxprocs"
 )
@@ -73,6 +76,14 @@ func main() {
 	if err := cfg.Load(); err != nil {
 		panic(fmt.Errorf("load config: %w", err))
 	}
+
+	// Tracing: install a real TracerProvider so kratos tracing.Server middleware
+	// emits valid trace/span IDs (the default noop provider returns zeros).
+	// Spans are not exported anywhere — swap in an OTLP/Jaeger exporter when needed.
+	tp := sdktrace.NewTracerProvider()
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.TraceContext{})
+	defer func() { _ = tp.Shutdown(context.Background()) }()
 
 	daprClient, err := dapr.NewClient()
 	if err != nil {
