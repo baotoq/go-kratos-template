@@ -6,72 +6,54 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
 	"github.com/go-kratos/kratos/v2/log"
 )
 
-// SecretStore is the minimal interface LoadSecrets needs from a secret backend.
-// Keeping the dependency one method wide makes the function trivial to fake.
+// SecretStore is the minimal interface LoadSecrets needs from a Dapr-style
+// secret backend. dapr.Client satisfies it structurally.
 type SecretStore interface {
+	Wait(ctx context.Context, timeout time.Duration) error
 	GetSecret(ctx context.Context, storeName, key string, meta map[string]string) (map[string]string, error)
 }
 
 const (
 	secretStoreName = "secretstore"
-	secretBundle    = "secrets"
 	secretTagKey    = "secret"
 )
 
-// Retry knobs are vars (not consts) so tests can shrink them.
-var (
-	secretLoadAttempts = 12
-	secretLoadInterval = 5 * time.Second
-	secretCallTimeout  = 5 * time.Second
-)
+// secretWaitTimeout is a var so tests can shrink it.
+var secretWaitTimeout = 60 * time.Second
 
 // Secrets holds runtime values pulled from the secret store. Each field's
-// `secret:"..."` tag is the bundle key the value is read from; LoadSecrets
+// `secret:"..."` tag is the secret key the value is read from; LoadSecrets
 // requires every tagged field to have a non-empty value.
 type Secrets struct {
 	DatabaseSource string `secret:"DATABASE_CONNECTION_STRING"`
 	RedisHost      string `secret:"REDIS_HOST"`
 }
 
-// LoadSecrets retries the secret store until it responds, then maps the bundle
-// into a Secrets struct and verifies every tagged field is set.
+// LoadSecrets blocks until the sidecar reports ready, then fetches each tagged
+// secret with one GetSecret call per key and verifies the value is non-empty.
 // The caller owns the store lifecycle.
 func LoadSecrets(ctx context.Context, store SecretStore, logger *log.Helper) (*Secrets, error) {
-	var (
-		raw     map[string]string
-		attempt int
-	)
-	op := func() error {
-		attempt++
-		callCtx, cancel := context.WithTimeout(ctx, secretCallTimeout)
-		defer cancel()
-		s, err := store.GetSecret(callCtx, secretStoreName, secretBundle, nil)
+	logger.Info("waiting for secret store sidecar")
+	if err := store.Wait(ctx, secretWaitTimeout); err != nil {
+		return nil, fmt.Errorf("secret store not ready after %s: %w", secretWaitTimeout, err)
+	}
+	return mapSecrets(func(key string) (string, error) {
+		result, err := store.GetSecret(ctx, secretStoreName, key, nil)
 		if err != nil {
-			return err
+			return "", err
 		}
-		raw = s
-		return nil
-	}
-	notify := func(err error, _ time.Duration) {
-		logger.Infof("waiting for secret store (attempt %d/%d): %v", attempt, secretLoadAttempts, err)
-	}
-	bo := backoff.WithContext(
-		backoff.WithMaxRetries(backoff.NewConstantBackOff(secretLoadInterval), uint64(secretLoadAttempts-1)),
-		ctx,
-	)
-	if err := backoff.RetryNotify(op, bo, notify); err != nil {
-		return nil, fmt.Errorf("secret store not ready after %s: %w", time.Duration(secretLoadAttempts)*secretLoadInterval, err)
-	}
-	return mapSecrets(raw)
+		return result[key], nil
+	})
 }
 
-// mapSecrets copies tagged fields from raw into a Secrets struct, returning an
-// error if any tagged field is missing or empty.
-func mapSecrets(raw map[string]string) (*Secrets, error) {
+// mapSecrets walks the Secrets struct and fills each tagged field by calling
+// fetch(key). It returns an error if any tagged field's value is empty or if
+// fetch fails. Decoupling this from the store means the reflection + validation
+// rules live in one place and stay trivially testable.
+func mapSecrets(fetch func(key string) (string, error)) (*Secrets, error) {
 	var s Secrets
 	v := reflect.ValueOf(&s).Elem()
 	t := v.Type()
@@ -80,10 +62,12 @@ func mapSecrets(raw map[string]string) (*Secrets, error) {
 		if !ok {
 			continue
 		}
-		value := raw[key]
+		value, err := fetch(key)
+		if err != nil {
+			return nil, fmt.Errorf("get secret %q: %w", key, err)
+		}
 		if value == "" {
-			return nil, fmt.Errorf("required secret %q is empty in store %q bundle %q",
-				key, secretStoreName, secretBundle)
+			return nil, fmt.Errorf("required secret %q is empty in store %q", key, secretStoreName)
 		}
 		v.Field(i).SetString(value)
 	}

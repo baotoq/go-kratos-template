@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"io"
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -20,10 +19,18 @@ const (
 	keyRedisHost = "REDIS_HOST"
 )
 
-// fakeStore implements SecretStore via a single function pointer so each test
-// can wire up its own GetSecret behaviour.
+// fakeStore implements SecretStore via function pointers so each test can wire
+// up its own Wait / GetSecret behaviour.
 type fakeStore struct {
+	wait      func(ctx context.Context, timeout time.Duration) error
 	getSecret func(ctx context.Context, store, key string, meta map[string]string) (map[string]string, error)
+}
+
+func (f *fakeStore) Wait(ctx context.Context, timeout time.Duration) error {
+	if f.wait == nil {
+		return nil
+	}
+	return f.wait(ctx, timeout)
 }
 
 func (f *fakeStore) GetSecret(ctx context.Context, store, key string, meta map[string]string) (map[string]string, error) {
@@ -34,33 +41,33 @@ func discardHelper() *log.Helper {
 	return log.NewHelper(log.NewStdLogger(io.Discard))
 }
 
-// withFastRetries shrinks the package-level retry knobs so tests don't sleep
-// for real, restoring them on cleanup.
-func withFastRetries(t *testing.T, attempts int, interval time.Duration) {
+// withFastWait shrinks the package-level wait timeout so tests don't sleep for
+// real, restoring it on cleanup.
+func withFastWait(t *testing.T, timeout time.Duration) {
 	t.Helper()
-	prevAttempts, prevInterval := secretLoadAttempts, secretLoadInterval
-	secretLoadAttempts, secretLoadInterval = attempts, interval
-	t.Cleanup(func() {
-		secretLoadAttempts, secretLoadInterval = prevAttempts, prevInterval
-	})
+	prev := secretWaitTimeout
+	secretWaitTimeout = timeout
+	t.Cleanup(func() { secretWaitTimeout = prev })
 }
 
 func TestLoadSecrets_Success(t *testing.T) {
 	// Arrange
-	withFastRetries(t, 3, time.Millisecond)
-	client := &fakeStore{
-		getSecret: func(ctx context.Context, store, key string, _ map[string]string) (map[string]string, error) {
-			assert.Equal(t, secretStoreName, store)
-			assert.Equal(t, secretBundle, key)
-			return map[string]string{
-				keyDBSource:  "postgres://user:pass@host/db",
-				keyRedisHost: "redis:6379",
-			}, nil
+	withFastWait(t, time.Millisecond)
+	values := map[string]string{
+		keyDBSource:  "postgres://user:pass@host/db",
+		keyRedisHost: "redis:6379",
+	}
+	store := &fakeStore{
+		getSecret: func(_ context.Context, storeName, key string, _ map[string]string) (map[string]string, error) {
+			assert.Equal(t, secretStoreName, storeName)
+			v, ok := values[key]
+			require.Truef(t, ok, "unexpected key %q", key)
+			return map[string]string{key: v}, nil
 		},
 	}
 
 	// Act
-	secrets, err := LoadSecrets(context.Background(), client, discardHelper())
+	secrets, err := LoadSecrets(context.Background(), store, discardHelper())
 
 	// Assert
 	require.NoError(t, err)
@@ -72,111 +79,106 @@ func TestLoadSecrets_Success(t *testing.T) {
 
 func TestLoadSecrets_MissingRequiredField(t *testing.T) {
 	cases := []struct {
-		name    string
-		bundle  map[string]string
-		missing string
+		name   string
+		values map[string]string
+		empty  string
 	}{
 		{
-			name:    "missing database source",
-			bundle:  map[string]string{keyRedisHost: "redis:6379"},
-			missing: keyDBSource,
+			name:   "missing database source",
+			values: map[string]string{keyRedisHost: "redis:6379"},
+			empty:  keyDBSource,
 		},
 		{
-			name:    "missing redis host",
-			bundle:  map[string]string{keyDBSource: "postgres://x"},
-			missing: keyRedisHost,
+			name:   "missing redis host",
+			values: map[string]string{keyDBSource: "postgres://x"},
+			empty:  keyRedisHost,
 		},
 		{
 			name: "empty database source",
-			bundle: map[string]string{
+			values: map[string]string{
 				keyDBSource:  "",
 				keyRedisHost: "redis:6379",
 			},
-			missing: keyDBSource,
+			empty: keyDBSource,
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Arrange
-			withFastRetries(t, 3, time.Millisecond)
-			client := &fakeStore{
-				getSecret: func(context.Context, string, string, map[string]string) (map[string]string, error) {
-					return tc.bundle, nil
+			withFastWait(t, time.Millisecond)
+			store := &fakeStore{
+				getSecret: func(_ context.Context, _, key string, _ map[string]string) (map[string]string, error) {
+					return map[string]string{key: tc.values[key]}, nil
 				},
 			}
 
 			// Act
-			secrets, err := LoadSecrets(context.Background(), client, discardHelper())
+			secrets, err := LoadSecrets(context.Background(), store, discardHelper())
 
 			// Assert
 			require.Error(t, err)
 			assert.Nil(t, secrets)
-			assert.Contains(t, err.Error(), tc.missing)
+			assert.Contains(t, err.Error(), tc.empty)
 		})
 	}
 }
 
-func TestLoadSecrets_RetriesUntilSuccess(t *testing.T) {
+func TestLoadSecrets_GetSecretFails(t *testing.T) {
 	// Arrange
-	withFastRetries(t, 5, time.Millisecond)
-	var calls atomic.Int32
-	client := &fakeStore{
+	withFastWait(t, time.Millisecond)
+	backendErr := errors.New("permission denied")
+	store := &fakeStore{
 		getSecret: func(context.Context, string, string, map[string]string) (map[string]string, error) {
-			if calls.Add(1) < 3 {
-				return nil, errors.New("sidecar warming up")
-			}
-			return map[string]string{
-				keyDBSource:  "postgres://x",
-				keyRedisHost: "redis:6379",
-			}, nil
+			return nil, backendErr
 		},
 	}
 
 	// Act
-	secrets, err := LoadSecrets(context.Background(), client, discardHelper())
-
-	// Assert
-	require.NoError(t, err)
-	require.NotNil(t, secrets)
-	assert.Equal(t, int32(3), calls.Load(), "expected exactly 3 attempts (2 failures + 1 success)")
-}
-
-func TestLoadSecrets_RetriesExhausted(t *testing.T) {
-	// Arrange
-	withFastRetries(t, 3, time.Millisecond)
-	transientErr := errors.New("sidecar unreachable")
-	var calls atomic.Int32
-	client := &fakeStore{
-		getSecret: func(context.Context, string, string, map[string]string) (map[string]string, error) {
-			calls.Add(1)
-			return nil, transientErr
-		},
-	}
-
-	// Act
-	secrets, err := LoadSecrets(context.Background(), client, discardHelper())
+	secrets, err := LoadSecrets(context.Background(), store, discardHelper())
 
 	// Assert
 	require.Error(t, err)
 	assert.Nil(t, secrets)
-	assert.ErrorIs(t, err, transientErr)
-	assert.Equal(t, int32(3), calls.Load(), "expected attempts to equal secretLoadAttempts")
+	assert.ErrorIs(t, err, backendErr)
+}
+
+func TestLoadSecrets_WaitFails(t *testing.T) {
+	// Arrange
+	withFastWait(t, time.Millisecond)
+	waitErr := errors.New("sidecar unreachable")
+	store := &fakeStore{
+		wait: func(context.Context, time.Duration) error {
+			return waitErr
+		},
+		getSecret: func(context.Context, string, string, map[string]string) (map[string]string, error) {
+			t.Fatal("GetSecret should not be called when Wait fails")
+			return nil, nil
+		},
+	}
+
+	// Act
+	secrets, err := LoadSecrets(context.Background(), store, discardHelper())
+
+	// Assert
+	require.Error(t, err)
+	assert.Nil(t, secrets)
+	assert.ErrorIs(t, err, waitErr)
 }
 
 func TestLoadSecrets_ContextCanceled(t *testing.T) {
-	// Arrange — large attempt count + slow interval so retry loop must wait on ctx
-	withFastRetries(t, 100, time.Second)
-	client := &fakeStore{
-		getSecret: func(context.Context, string, string, map[string]string) (map[string]string, error) {
-			return nil, errors.New("transient")
+	// Arrange
+	withFastWait(t, time.Second)
+	store := &fakeStore{
+		wait: func(ctx context.Context, _ time.Duration) error {
+			return ctx.Err()
 		},
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
 	// Act
-	secrets, err := LoadSecrets(ctx, client, discardHelper())
+	secrets, err := LoadSecrets(ctx, store, discardHelper())
 
 	// Assert
 	require.Error(t, err)
