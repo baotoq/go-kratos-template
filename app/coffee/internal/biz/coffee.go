@@ -8,6 +8,7 @@ import (
 	"github.com/dapr/durabletask-go/api"
 	"github.com/dapr/durabletask-go/workflow"
 	kratoserrors "github.com/go-kratos/kratos/v2/errors"
+	"github.com/go-kratos/kratos/v2/log"
 )
 
 // CoffeeOrder is what you tell the workflow you want.
@@ -29,11 +30,13 @@ var ErrCoffeeNotFound = kratoserrors.NotFound("COFFEE_NOT_FOUND", "coffee instan
 // CoffeeUsecase wires the workflow client into a tidy Brew/Check API.
 type CoffeeUsecase struct {
 	client *workflow.Client
+	pubsub *PubSubUsecase
+	log    *log.Helper
 }
 
 // NewCoffeeUsecase registers the workflow + activities and starts the worker.
 // The cleanup func cancels the worker context on shutdown.
-func NewCoffeeUsecase(c *workflow.Client) (*CoffeeUsecase, func(), error) {
+func NewCoffeeUsecase(c *workflow.Client, pubsub *PubSubUsecase, logger log.Logger) (*CoffeeUsecase, func(), error) {
 	registry := workflow.NewRegistry()
 	if err := registry.AddWorkflowN(CoffeeWorkflowName, MakeCoffeeWorkflow); err != nil {
 		return nil, nil, fmt.Errorf("register workflow: %w", err)
@@ -50,7 +53,11 @@ func NewCoffeeUsecase(c *workflow.Client) (*CoffeeUsecase, func(), error) {
 		return nil, nil, fmt.Errorf("start worker: %w", err)
 	}
 	cleanup := func() { cancel() }
-	return &CoffeeUsecase{client: c}, cleanup, nil
+	return &CoffeeUsecase{
+		client: c,
+		pubsub: pubsub,
+		log:    log.NewHelper(log.With(logger, "module", "biz/coffee")),
+	}, cleanup, nil
 }
 
 // Brew schedules a new MakeCoffeeWorkflow instance and returns its id.
@@ -58,6 +65,10 @@ func (uc *CoffeeUsecase) Brew(ctx context.Context, o *CoffeeOrder) (string, erro
 	id, err := uc.client.ScheduleWorkflow(ctx, CoffeeWorkflowName, workflow.WithInput(o))
 	if err != nil {
 		return "", fmt.Errorf("schedule workflow: %w", err)
+	}
+	// Publish failure must not fail the brew — workflow is already scheduled.
+	if perr := uc.pubsub.PublishOrderPlaced(ctx, CoffeeOrderPlacedEvent{InstanceID: id, Beans: o.Beans, Size: o.Size}); perr != nil {
+		uc.log.WithContext(ctx).Warnw("msg", "publish order failed", "instance_id", id, "err", perr)
 	}
 	return id, nil
 }

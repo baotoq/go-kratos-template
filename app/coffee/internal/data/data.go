@@ -5,4 +5,4 @@ import (
 )
 
 // ProviderSet is data providers — only infra primitives, no biz imports.
-var ProviderSet = wire.NewSet(NewWorkflowClient)
+var ProviderSet = wire.NewSet(NewWorkflowClient, NewPublisher)

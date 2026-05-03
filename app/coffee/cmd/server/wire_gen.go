@@ -26,13 +26,15 @@ import (
 // wireApp init kratos application.
 func wireApp(confServer *conf.Server, clientClient client.Client, logger log.Logger) (*kratos.App, func(), error) {
 	workflowClient := data.NewWorkflowClient(clientClient)
-	coffeeUsecase, cleanup, err := biz.NewCoffeeUsecase(workflowClient)
+	publisher := data.NewPublisher(clientClient)
+	pubSubUsecase := biz.NewPubSubUsecase(publisher, logger)
+	coffeeUsecase, cleanup, err := biz.NewCoffeeUsecase(workflowClient, pubSubUsecase, logger)
 	if err != nil {
 		return nil, nil, err
 	}
 	coffeeService := service.NewCoffeeService(coffeeUsecase)
 	grpcServer := server.NewGRPCServer(confServer, coffeeService, logger)
-	httpServer := server.NewHTTPServer(confServer, coffeeService, logger)
+	httpServer := server.NewHTTPServer(confServer, coffeeService, pubSubUsecase, logger)
 	app := newApp(logger, grpcServer, httpServer)
 	return app, func() {
 		cleanup()

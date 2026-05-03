@@ -4,6 +4,7 @@ import (
 	nethttp "net/http"
 
 	v1 "coffee/api/coffee/v1"
+	biz "coffee/app/coffee/internal/biz"
 	"coffee/app/coffee/internal/conf"
 	"coffee/app/coffee/internal/service"
 
@@ -15,7 +16,7 @@ import (
 )
 
 // NewHTTPServer new an HTTP server.
-func NewHTTPServer(c *conf.Server, coffee *service.CoffeeService, logger log.Logger) *http.Server {
+func NewHTTPServer(c *conf.Server, coffee *service.CoffeeService, pubsub *biz.PubSubUsecase, logger log.Logger) *http.Server {
 	var opts = []http.ServerOption{
 		http.Middleware(
 			recovery.Recovery(),
@@ -35,6 +36,7 @@ func NewHTTPServer(c *conf.Server, coffee *service.CoffeeService, logger log.Log
 	srv := http.NewServer(opts...)
 	srv.HandleFunc("/healthz", healthz)
 	v1.RegisterCoffeeHTTPServer(srv, coffee)
+	RegisterCoffeeSubscriptions(srv, pubsub, logger)
 	return srv
 }
 
