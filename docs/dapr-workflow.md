@@ -14,11 +14,11 @@ Why this matters: each step is *durable*. If the pod dies between step 1 and ste
 
 | File | Purpose |
 | --- | --- |
-| `api/greeter/coffee/v1/coffee.proto` | gRPC + HTTP contract: `Brew`, `Check` |
-| `app/greeter/internal/biz/coffee.go` | `CoffeeOrder`/`CoffeeStatus` types, `CoffeeUsecase` (registers workflow + activities, runs the worker, exposes `Brew`/`Check`) |
-| `app/greeter/internal/biz/coffee_workflow.go` | The two-step workflow + the two activity functions |
-| `app/greeter/internal/data/workflow.go` | Just the `*workflow.Client` factory (one-line wrapper around the existing Dapr sidecar conn) |
-| `app/greeter/internal/service/coffee.go` | gRPC/HTTP service implementation |
+| `api/coffee/v1/coffee.proto` | gRPC + HTTP contract: `Brew`, `Check` |
+| `app/coffee/internal/biz/coffee.go` | `CoffeeOrder`/`CoffeeStatus` types, `CoffeeUsecase` (registers workflow + activities, runs the worker, exposes `Brew`/`Check`) |
+| `app/coffee/internal/biz/coffee_workflow.go` | The two-step workflow + the two activity functions |
+| `app/coffee/internal/data/workflow.go` | Just the `*workflow.Client` factory (one-line wrapper around the existing Dapr sidecar conn) |
+| `app/coffee/internal/service/coffee.go` | gRPC/HTTP service implementation |
 | `deploy/k8s/base/infra/dapr/statestore.yaml` | Redis state store with `actorStateStore=true` — required so Dapr can persist workflow state |
 | `http/coffee.http` | REST Client / JetBrains HTTP requests to drive the demo |
 

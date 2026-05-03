@@ -26,7 +26,6 @@ init:
 	go install github.com/go-kratos/kratos/cmd/protoc-gen-go-http/v2@v2.0.0-20260404020628-f149714c1d54
 	go install github.com/google/gnostic/cmd/protoc-gen-openapi@v0.7.1
 	go install github.com/google/wire/cmd/wire@v0.7.0
-	go install entgo.io/ent/cmd/ent@v0.14.6
 
 .PHONY: config
 # generate internal proto
@@ -44,13 +43,13 @@ api:
 	       --go_out=paths=source_relative:./api \
 	       --go-http_out=paths=source_relative:./api \
 	       --go-grpc_out=paths=source_relative:./api \
-	       --openapi_out=fq_schema_naming=true,default_response=false:app/greeter \
+	       --openapi_out=fq_schema_naming=true,default_response=false:app/coffee \
 	       $(API_PROTO_FILES)
 
 .PHONY: build
 # build
 build:
-	mkdir -p bin/ && go build -ldflags "-X main.Name=greeter -X main.Version=$(VERSION)" -o ./bin/greeter ./app/greeter/cmd/server
+	mkdir -p bin/ && go build -ldflags "-X main.Name=coffee -X main.Version=$(VERSION)" -o ./bin/coffee ./app/coffee/cmd/server
 
 .PHONY: test
 # test (requires Docker — testcontainers-go integration tests run alongside units)

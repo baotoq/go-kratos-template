@@ -3,7 +3,7 @@ kind: Kustomization
 resources:
   - ../../base
 patches:
-  - path: greeter-debug-patch.yaml
+  - path: coffee-debug-patch.yaml
     target:
       kind: Deployment
-      name: greeter
+      name: coffee

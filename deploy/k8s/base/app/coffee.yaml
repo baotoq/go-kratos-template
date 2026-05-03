@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: coffee
+spec:
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http
+    - name: grpc
+      port: 9000
+      targetPort: grpc
+  selector:
+    app: coffee
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: coffee
+spec:
+  selector:
+    matchLabels:
+      app: coffee
+  template:
+    metadata:
+      labels:
+        app: coffee
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "coffee"
+        dapr.io/log-as-json: "true"
+    spec:
+      containers:
+        - name: coffee
+          image: coffee
+          ports:
+            - name: http
+              containerPort: 8000
+            - name: grpc
+              containerPort: 9000
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 2
+            periodSeconds: 5
+            failureThreshold: 3
+          volumeMounts:
+            - name: config
+              mountPath: /data/conf
+      volumes:
+        - name: config
+          configMap:
+            name: coffee-config

@@ -1,12 +1,9 @@
 apiVersion: v2
-name: greeter-deps
+name: coffee-deps
 version: 0.1.0
 type: application
-description: Local dev dependencies (Postgres + Redis) for greeter.
+description: Local dev dependencies (Redis) for coffee.
 dependencies:
-  - name: postgres
-    version: 0.19.3
-    repository: oci://registry-1.docker.io/cloudpirates
   - name: redis
     version: 0.27.4
     repository: oci://registry-1.docker.io/cloudpirates

@@ -116,14 +116,12 @@
   },
 
   // Forward all service, debug, and infrastructure ports used by Tilt.
-  "forwardPorts": [8000, 9000, 7000, 5432, 6379, 5050, 10350],
+  "forwardPorts": [8000, 9000, 7000, 6379, 10350],
   "portsAttributes": {
     "8000": { "label": "HTTP", "onAutoForward": "silent" },
     "9000": { "label": "gRPC", "onAutoForward": "silent" },
     "7000": { "label": "Delve", "onAutoForward": "silent" },
-    "5432": { "label": "Postgres", "onAutoForward": "notify" },
     "6379": { "label": "Redis", "onAutoForward": "silent" },
-    "5050": { "label": "pgAdmin", "onAutoForward": "notify" },
     "10350": { "label": "Tilt Dev", "onAutoForward": "notify" }
   },
 

@@ -2,17 +2,12 @@ GOPATH:=$(shell go env GOPATH)
 VERSION=$(shell git describe --tags --always)
 APP_RELATIVE_PATH=$(shell basename $$PWD)
 APP_NAME=$(shell echo $(APP_RELATIVE_PATH) | sed -En "s/\//-/p")
-DOCKER_IMAGE=$(shell echo $(APP_NAME) |awk -F '@' '{print "go-kratos/beer-" $$0 ":0.1.0"}')
+DOCKER_IMAGE=$(shell echo $(APP_NAME) |awk -F '@' '{print "go-kratos/" $$0 ":0.1.0"}')
 
 .PHONY: wire
 # generate wire
 wire:
 	cd cmd/server && wire
-
-.PHONY: ent
-# generate ent
-ent:
-	cd internal/data && ent generate ./ent/schema
 
 .PHONY: run
 # run app
